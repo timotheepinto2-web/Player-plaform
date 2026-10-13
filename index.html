@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Starfighter Ultra - Co-op Deluxe</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-        body { font-family: 'Orbitron', sans-serif; background: #030008; color: #fff; overflow: hidden; user-select: none; }
+        body { font-family: 'Orbitron', sans-serif; background: #030008; color: #fff; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; }
         .neon-glow-cyan { text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff; }
         .neon-glow-magenta { text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055; }
         .neon-box { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); border: 1px solid rgba(0, 243, 255, 0.5); background: rgba(3, 0, 8, 0.85); }
@@ -76,24 +76,23 @@
         </div>
     </div>
 
-    <!-- Mobile Virtual Controls -->
-    <div id="mobile-controls" class="absolute inset-0 z-30 pointer-events-none hidden justify-between p-8 items-end">
-        <div id="virtual-joystick" class="w-32 h-32 rounded-full border-2 border-cyan-500/30 bg-cyan-500/10 relative pointer-events-auto flex items-center justify-center">
+    <!-- Mobile Virtual Controls & Fullscreen Helper -->
+    <div id="mobile-controls" class="absolute inset-0 z-30 pointer-events-none hidden justify-between p-6 items-end">
+        <div id="virtual-joystick" class="w-28 h-28 rounded-full border-2 border-cyan-500/40 bg-cyan-500/10 relative pointer-events-auto flex items-center justify-center">
             <div id="joystick-thumb" class="w-12 h-12 rounded-full bg-cyan-400 shadow-[0_0_15px_#00f3ff] absolute"></div>
         </div>
         <div class="flex flex-col gap-4 pointer-events-auto">
-            <button id="btn-fire" class="w-20 h-20 rounded-full bg-pink-600/40 border-2 border-pink-500 flex items-center justify-center text-xs font-bold text-pink-200 active:bg-pink-600">TIR</button>
+            <button id="btn-fire" class="w-20 h-20 rounded-full bg-pink-600/50 border-2 border-pink-500 flex items-center justify-center text-xs font-bold text-pink-200 active:bg-pink-600 shadow-lg">TIR</button>
         </div>
     </div>
 
     <!-- Main Menu Overlay -->
-    <div id="menu-screen" class="absolute inset-0 z-40 bg-[#030008]/90 flex flex-col items-center justify-center p-6">
+    <div id="menu-screen" class="absolute inset-0 z-40 bg-[#030008]/95 flex flex-col items-center justify-center p-6">
         <div class="text-center mb-6">
-            <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 tracking-wider neon-glow-cyan">NEON STARFIGHTER</h1>
-            <p class="text-cyan-300/70 text-sm tracking-widest mt-2">ULTRA ARCADE CO-OP EDITION</p>
+            <h1 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 tracking-wider neon-glow-cyan">NEON STARFIGHTER</h1>
+            <p class="text-cyan-300/70 text-xs md:text-sm tracking-widest mt-2">ULTRA ARCADE CO-OP EDITION</p>
         </div>
 
-        <!-- Choice of Difficulty -->
         <div class="flex items-center gap-3 mb-6">
             <span class="text-xs text-gray-400 font-bold">DIFFICULTÉ :</span>
             <button onclick="setDifficulty('easy')" id="diff-easy" class="px-3 py-1 text-xs font-bold rounded border border-green-500 bg-green-950/50 text-green-300">FACILE</button>
@@ -101,13 +100,13 @@
             <button onclick="setDifficulty('hard')" id="diff-hard" class="px-3 py-1 text-xs font-bold rounded border border-red-500 bg-red-950/50 text-red-300">DIFFICILE</button>
         </div>
 
-        <div class="flex flex-col gap-4 w-80">
-            <button onclick="startGame(false)" class="neon-box py-4 rounded font-bold text-cyan-300 hover:bg-cyan-500/20 transition text-lg tracking-wider">JOUER (SOLO)</button>
-            <button onclick="openMultiplayerMenu()" class="neon-box py-4 rounded font-bold text-pink-400 hover:bg-pink-500/20 transition text-lg tracking-wider">⚡ MULTIJOUEUR CO-OP</button>
-            <button onclick="openHangar()" class="neon-box py-4 rounded font-bold text-yellow-400 hover:bg-yellow-500/20 transition text-lg tracking-wider">HANGAR & BOUTIQUE</button>
+        <div class="flex flex-col gap-4 w-72 md:w-80">
+            <button onclick="requestFullscreenAndStart(false)" class="neon-box py-3.5 rounded font-bold text-cyan-300 hover:bg-cyan-500/20 transition text-base md:text-lg tracking-wider">JOUER (SOLO)</button>
+            <button onclick="openMultiplayerMenu()" class="neon-box py-3.5 rounded font-bold text-pink-400 hover:bg-pink-500/20 transition text-base md:text-lg tracking-wider">⚡ MULTIJOUEUR CO-OP</button>
+            <button onclick="openHangar()" class="neon-box py-3.5 rounded font-bold text-yellow-400 hover:bg-yellow-500/20 transition text-base md:text-lg tracking-wider">HANGAR & BOUTIQUE</button>
         </div>
-        <div class="mt-8 text-xs text-gray-400 text-center">
-            <p>J1 : Q / D (ou Flèches Gauche/Droite) | Tir : <span class="text-cyan-300 font-bold">BARRE ESPACE</span></p>
+        <div class="mt-6 text-[11px] text-gray-400 text-center">
+            <p>J1 : Q / D | Tir : <span class="text-cyan-300 font-bold">BARRE ESPACE</span></p>
             <p class="mt-1">J2 (Co-op) : J / L | Tir : <span class="text-yellow-300 font-bold">ENTRÉE (Enter)</span></p>
         </div>
     </div>
@@ -119,11 +118,12 @@
             <button onclick="hostGame()" class="py-3 bg-cyan-600 font-bold rounded text-white hover:bg-cyan-500 transition">CRÉER UNE PARTIE (Hôte)</button>
             <div class="flex flex-col gap-2 mt-4">
                 <span class="text-xs text-gray-400">Rejoindre un salon :</span>
-                <input id="room-code-input" type="text" placeholder="Entrer le code à 4 lettres" class="bg-black/50 border border-cyan-500/50 p-3 rounded text-center tracking-widest text-lg font-bold uppercase text-cyan-300 outline-none focus:border-cyan-400">
+                <input id="room-code-input" type="text" placeholder="Code à 4 lettres" class="bg-black/50 border border-cyan-500/50 p-3 rounded text-center tracking-widest text-lg font-bold uppercase text-cyan-300 outline-none focus:border-cyan-400">
                 <button onclick="joinGame()" class="py-3 bg-pink-600 font-bold rounded text-white hover:bg-pink-500 transition mt-2">REJOINDRE</button>
             </div>
-            <div id="lobby-status" class="text-center text-sm text-yellow-400 font-bold mt-2"></div>
-            <button onclick="closeMultiplayerMenu()" class="text-xs text-gray-400 underline mt-4 text-center">Retour au menu</button>
+            <div id="lobby-status" class="text-center text-sm text-yellow-400 font-bold mt-2">En attente d'action...</div>
+            <button id="btn-start-coop" onclick="startHostGameSession()" class="py-3 bg-green-600 font-bold rounded text-white hover:bg-green-500 transition hidden shadow-lg animate-pulse">LANCER LA PARTIE CO-OP</button>
+            <button onclick="closeMultiplayerMenu()" class="text-xs text-gray-400 underline mt-2 text-center">Retour au menu</button>
         </div>
     </div>
 
@@ -166,7 +166,7 @@
             </button>
         </div>
 
-        <button onclick="closeHangar()" class="neon-box px-8 py-3 rounded font-bold text-yellow-400 hover:bg-yellow-500/20 transition">RETOOUR AU MENU</button>
+        <button onclick="closeHangar()" class="neon-box px-8 py-3 rounded font-bold text-yellow-400 hover:bg-yellow-500/20 transition">RETOURNER AU MENU</button>
     </div>
 
     <!-- Game Over Screen -->
@@ -180,9 +180,7 @@
     <script>
         // --- GAME STATE & STORAGE ---
         let gameData = JSON.parse(localStorage.getItem('neon_starfighter_save')) || {
-            credits: 0,
-            highScore: 0,
-            selectedShip: 0,
+            credits: 0, highScore: 0, selectedShip: 0,
             unlockedShips: [true, false, false],
             upgrades: { damage: 1, fireRate: 1, shield: 1 }
         };
@@ -202,14 +200,16 @@
             currentDifficulty = diff;
             ['easy', 'normal', 'hard'].forEach(d => {
                 let btn = document.getElementById(`diff-${d}`);
-                if (d === diff) {
-                    btn.style.opacity = '1';
-                    btn.style.transform = 'scale(1.05)';
-                } else {
-                    btn.style.opacity = '0.4';
-                    btn.style.transform = 'scale(1)';
-                }
+                if (d === diff) { btn.style.opacity = '1'; btn.style.transform = 'scale(1.05)'; }
+                else { btn.style.opacity = '0.4'; btn.style.transform = 'scale(1)'; }
             });
+        }
+
+        function requestFullscreenAndStart(coopMode) {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            startGame(coopMode);
         }
 
         let scene, camera, renderer, clock;
@@ -219,22 +219,15 @@
         let stars;
         let isCoop = false, peer = null, conn = null, isHost = false, roomCode = '';
 
-        // Fixed Y altitude for clean 2D lateral gameplay
         const GAME_Y_PLANE = 0;
 
-        let player1 = {
-            mesh: null, x: 0, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, 
-            fireCooldown: 0, speed: 0.5, alive: true
-        };
-        let player2 = {
-            mesh: null, x: 3, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, 
-            fireCooldown: 0, speed: 0.5, alive: true
-        };
+        let player1 = { mesh: null, x: 0, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, fireCooldown: 0, speed: 0.5, alive: true };
+        let player2 = { mesh: null, x: 3, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, fireCooldown: 0, speed: 0.5, alive: true };
 
         let keys = {};
         let boss = null;
 
-        // Audio synthesizer Web Audio API
+        // Audio synth
         let audioCtx = null;
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -253,28 +246,24 @@
                 osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
                 gain.gain.setValueAtTime(0.15, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
             } else if (type === 'explosion') {
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(30, now + 0.4);
                 gain.gain.setValueAtTime(0.3, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-                osc.start(now);
-                osc.stop(now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
             } else if (type === 'powerup') {
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(300, now);
                 osc.frequency.exponentialRampToValueAtTime(900, now + 0.2);
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now);
-                osc.stop(now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
             }
         }
 
-        // --- INIT THREE.JS ---
         function init3D() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
@@ -287,21 +276,14 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0x00f3ff, 1.5);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            let dirLight = new THREE.DirectionalLight(0x00f3ff, 1.5);
             dirLight.position.set(10, 20, 10);
             scene.add(dirLight);
 
-            const pointLight = new THREE.PointLight(0xff0055, 2, 50);
-            pointLight.position.set(-10, 10, -10);
-            scene.add(pointLight);
-
-            // Starfield
+            // Stars
             const starGeo = new THREE.BufferGeometry();
             const starCount = 2000;
             const starPos = new Float32Array(starCount * 3);
@@ -311,11 +293,9 @@
                 starPos[i+2] = (Math.random() - 0.5) * 300 - 50;
             }
             starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-            const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.6, transparent: true, opacity: 0.8});
-            stars = new THREE.Points(starGeo, starMat);
+            stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.6, transparent: true, opacity: 0.8}));
             scene.add(stars);
 
-            clock = new THREE.Clock();
             window.addEventListener('resize', onWindowResize);
             setupInput();
             setDifficulty('normal');
@@ -329,24 +309,14 @@
 
         function createShipMesh(colorHex) {
             const group = new THREE.Group();
-            const bodyGeo = new THREE.ConeGeometry(0.8, 2.5, 4);
+            let bodyGeo = new THREE.ConeGeometry(0.8, 2.5, 4);
             bodyGeo.rotateX(Math.PI / 2);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.8, roughness: 0.2, emissive: colorHex, emissiveIntensity: 0.3 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            let body = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.8, roughness: 0.2, emissive: colorHex, emissiveIntensity: 0.3 }));
             group.add(body);
 
-            const wingGeo = new THREE.BoxGeometry(2.2, 0.1, 1);
-            const wingMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.5, roughness: 0.5 });
-            const wings = new THREE.Mesh(wingGeo, wingMat);
+            let wings = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 1), new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.5 }));
             wings.position.z = 0.3;
             group.add(wings);
-
-            const reactorGeo = new THREE.SphereGeometry(0.3, 8, 8);
-            const reactorMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-            const reactor = new THREE.Mesh(reactorGeo, reactorMat);
-            reactor.position.z = 1.2;
-            group.add(reactor);
-
             return group;
         }
 
@@ -364,17 +334,16 @@
             }
         }
 
-        let joystickActive = false, joystickData = {x:0, y:0};
+        let joystickActive = false, joystickData = {x:0};
         function setupJoystick() {
             const joystick = document.getElementById('virtual-joystick');
             const thumb = document.getElementById('joystick-thumb');
-
             joystick.addEventListener('pointerdown', () => { joystickActive = true; });
             window.addEventListener('pointermove', (e) => {
                 if (!joystickActive) return;
-                const r = joystick.getBoundingClientRect();
+                let r = joystick.getBoundingClientRect();
                 let dx = e.clientX - (r.left + r.width/2);
-                const maxDist = 40;
+                let maxDist = 40;
                 dx = Math.max(-maxDist, Math.min(maxDist, dx));
                 thumb.style.transform = `translate(${dx}px, 0px)`;
                 joystickData.x = dx / maxDist;
@@ -385,7 +354,6 @@
                 thumb.style.transform = `translate(0px, 0px)`;
                 joystickData.x = 0;
             });
-
             document.getElementById('btn-fire').addEventListener('pointerdown', () => { keys['Space'] = true; });
             document.getElementById('btn-fire').addEventListener('pointerup', () => { keys['Space'] = false; });
         }
@@ -409,18 +377,18 @@
             player1.mesh = createShipMesh(p1Color);
             player1.x = isCoop ? -2 : 0; player1.y = GAME_Y_PLANE; player1.z = 0;
             player1.maxShield = 100 + (gameData.upgrades.shield - 1) * 25;
-            player1.shield = player1.maxShield;
+            player1.shield = player1.maxShield; player1.alive = true;
             scene.add(player1.mesh);
 
             if (isCoop) {
                 player2.mesh = createShipMesh(0xffd700);
                 player2.x = 2; player2.y = GAME_Y_PLANE; player2.z = 0;
-                player2.maxShield = 100; player2.shield = 100;
+                player2.maxShield = 100; player2.shield = 100; player2.alive = true;
                 scene.add(player2.mesh);
             }
 
             gameState = 'PLAYING';
-            spawnWave();
+            if (!isCoop || isHost) spawnWave();
         }
 
         function togglePause() {
@@ -474,26 +442,20 @@
         }
         function selectShip(idx) {
             let costs = [0, 500, 1200];
-            if (gameData.unlockedShips[idx]) {
-                gameData.selectedShip = idx;
-            } else if (gameData.credits >= costs[idx]) {
-                gameData.credits -= costs[idx];
-                gameData.unlockedShips[idx] = true;
-                gameData.selectedShip = idx;
-                saveGame();
+            if (gameData.unlockedShips[idx]) { gameData.selectedShip = idx; }
+            else if (gameData.credits >= costs[idx]) {
+                gameData.credits -= costs[idx]; gameData.unlockedShips[idx] = true; gameData.selectedShip = idx; saveGame();
             }
             updateHangarUI();
         }
         function upgradeStat(stat) {
             let costs = { damage: gameData.upgrades.damage * 100, fireRate: gameData.upgrades.fireRate * 150, shield: gameData.upgrades.shield * 200 };
             if (gameData.credits >= costs[stat] && gameData.upgrades[stat] < 5) {
-                gameData.credits -= costs[stat];
-                gameData.upgrades[stat]++;
-                saveGame();
-                updateHangarUI();
+                gameData.credits -= costs[stat]; gameData.upgrades[stat]++; saveGame(); updateHangarUI();
             }
         }
 
+        // --- MULTIPLAYER SETUP & NETWORKING ---
         function openMultiplayerMenu() {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('multi-screen').classList.remove('hidden');
@@ -508,51 +470,75 @@
             for(let i=0; i<4; i++) code += chars[Math.floor(Math.random() * chars.length)];
             return code;
         }
+
         function hostGame() {
             isHost = true;
             roomCode = generateRoomCode();
             peer = new Peer('ns-' + roomCode);
-            document.getElementById('lobby-status').innerText = `Code de salon : ${roomCode}. En attente du joueur 2...`;
+            document.getElementById('lobby-status').innerText = `Code : ${roomCode}. En attente du Joueur 2...`;
             
             peer.on('connection', (connection) => {
                 conn = connection;
-                document.getElementById('lobby-status').innerText = "Joueur 2 connecté ! Lancement...";
-                setTimeout(() => {
-                    document.getElementById('multi-screen').classList.add('hidden');
-                    startGame(true);
-                }, 1000);
+                document.getElementById('lobby-status').innerText = "Joueur 2 connecté ! Prêt à lancer.";
+                document.getElementById('btn-start-coop').classList.remove('hidden');
+                setupNetworkListeners();
             });
         }
+
         function joinGame() {
             isHost = false;
             roomCode = document.getElementById('room-code-input').value.toUpperCase();
-            if (roomCode.length !== 4) { alert("Code invalide (4 lettres requis)"); return; }
+            if (roomCode.length !== 4) { alert("Code invalide"); return; }
             peer = new Peer();
             peer.on('open', () => {
                 conn = peer.connect('ns-' + roomCode);
-                document.getElementById('lobby-status').innerText = "Connexion au salon...";
+                document.getElementById('lobby-status').innerText = "Connecté à l'hôte. En attente du lancement...";
                 conn.on('open', () => {
-                    document.getElementById('multi-screen').classList.add('hidden');
-                    startGame(true);
+                    setupNetworkListeners();
                 });
             });
         }
 
+        function startHostGameSession() {
+            if (conn) conn.send({ type: 'START_GAME', difficulty: currentDifficulty });
+            requestFullscreenAndStart(true);
+        }
+
+        function setupNetworkListeners() {
+            conn.on('data', (data) => {
+                if (data.type === 'START_GAME') {
+                    currentDifficulty = data.difficulty;
+                    requestFullscreenAndStart(true);
+                } else if (data.type === 'SYNC_STATE' && !isHost) {
+                    // Le client applique l'état synchronisé envoyé par l'hôte
+                    score = data.score;
+                    wave = data.wave;
+                    player1.x = data.p1x;
+                    player1.shield = data.p1Shield;
+                    player2.x = data.p2x;
+                    player2.shield = data.p2Shield;
+                } else if (data.type === 'INPUT_P2' && isHost) {
+                    player2.x = data.x;
+                    if (data.fire && player2.fireCooldown === 0) {
+                        fireBullet(player2, 0xffd700, 2);
+                        player2.fireCooldown = 10;
+                    }
+                }
+            });
+        }
+
+        // --- GAMEPLAY SPAWN & WAVE ---
         function spawnWave() {
             let enemyCount = 5 + wave * 2;
             let cfg = diffConfig[currentDifficulty];
 
-            if (wave % 5 === 0) {
-                spawnBoss();
-                return;
-            }
+            if (wave % 5 === 0) { spawnBoss(); return; }
             for(let i=0; i<enemyCount; i++) {
                 setTimeout(() => {
                     if (gameState !== 'PLAYING') return;
                     let geo = new THREE.ConeGeometry(0.9, 2, 4);
                     geo.rotateX(-Math.PI / 2);
-                    let mat = new THREE.MeshStandardMaterial({ color: 0xff2244, emissive: 0xff0033, emissiveIntensity: 0.6, metalness: 0.8 });
-                    let mesh = new THREE.Mesh(geo, mat);
+                    let mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xff2244, emissive: 0xff0033, emissiveIntensity: 0.6, metalness: 0.8 }));
                     mesh.position.set((Math.random() - 0.5) * 20, GAME_Y_PLANE, -60 - Math.random() * 20);
                     scene.add(mesh);
                     enemies.push({ mesh: mesh, hp: 2, speed: (0.2 + wave * 0.02) * cfg.enemySpeedMult, shootTimer: Math.random() * 60 });
@@ -561,38 +547,27 @@
         }
 
         function spawnBoss() {
-            let geo = new THREE.BoxGeometry(4, 2, 4);
-            let mat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0022, metalness: 0.9, roughness: 0.1 });
-            let mesh = new THREE.Mesh(geo, mat);
+            let mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 4), new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0022, metalness: 0.9 }));
             mesh.position.set(0, GAME_Y_PLANE, -40);
             scene.add(mesh);
-            boss = { mesh: mesh, hp: 80 + wave * 20, maxHp: 80 + wave * 20, phase: 1, shootTimer: 0 };
+            boss = { mesh: mesh, hp: 80 + wave * 20, maxHp: 80 + wave * 20, shootTimer: 0 };
             document.getElementById('boss-hud').classList.remove('hidden');
         }
 
         function triggerNuke() {
             if (gameState !== 'PLAYING') return;
             playSound('explosion');
-            enemies.forEach(e => {
-                createExplosion(e.mesh.position);
-                scene.remove(e.mesh);
-                score += 150;
-            });
+            enemies.forEach(e => { createExplosion(e.mesh.position); scene.remove(e.mesh); score += 150; });
             enemies = [];
-            if (boss) {
-                boss.hp -= 150;
-                createExplosion(boss.mesh.position);
-            }
+            if (boss) { boss.hp -= 150; createExplosion(boss.mesh.position); }
             enemyBullets.forEach(b => scene.remove(b.mesh));
             enemyBullets = [];
         }
 
         function createExplosion(pos) {
             playSound('explosion');
-            for(let i=0; i<15; i++) {
-                let pGeo = new THREE.SphereGeometry(0.15, 6, 6);
-                let pMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff0055 : 0x00f3ff });
-                let p = new THREE.Mesh(pGeo, pMat);
+            for(let i=0; i<12; i++) {
+                let p = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6, 6), new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff0055 : 0x00f3ff }));
                 p.position.copy(pos);
                 scene.add(p);
                 particles.push({ mesh: p, velocity: new THREE.Vector3((Math.random()-0.5)*0.6, 0, (Math.random()-0.5)*0.6), life: 30 });
@@ -600,13 +575,20 @@
         }
 
         function spawnPowerup(pos) {
-            let geo = new THREE.OctahedronGeometry(0.6);
-            let mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.8 });
-            let mesh = new THREE.Mesh(geo, mat);
-            mesh.position.copy(pos);
-            mesh.position.y = GAME_Y_PLANE;
+            let mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.6), new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.8 }));
+            mesh.position.copy(pos); mesh.position.y = GAME_Y_PLANE;
             scene.add(mesh);
             powerups.push({ mesh: mesh });
+        }
+
+        function fireBullet(pl, colorHex, ownerId) {
+            playSound('laser');
+            let dmg = ownerId === 1 ? gameData.upgrades.damage : 1;
+            let bMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6), new THREE.MeshBasicMaterial({ color: colorHex }));
+            bMesh.geometry.rotateX(Math.PI / 2);
+            bMesh.position.set(pl.x, GAME_Y_PLANE, pl.z - 1);
+            scene.add(bMesh);
+            bullets.push({ mesh: bMesh, damage: dmg, owner: ownerId });
         }
 
         // --- GAME LOOP ---
@@ -622,263 +604,157 @@
             }
             stars.geometry.attributes.position.needsUpdate = true;
 
-            // --- CONTRÔLES JOUEUR 1 (Uniquement Gauche / Droite : Q et D ou Flèches) ---
-            let dx1 = 0;
-            if (keys['KeyA'] || keys['ArrowLeft']) dx1 = -1;
-            if (keys['KeyD'] || keys['ArrowRight']) dx1 = 1;
-            if (joystickActive) { dx1 = joystickData.x; }
+            // Contrôles Joueur 1
+            if (isHost || !isCoop) {
+                let dx1 = 0;
+                if (keys['KeyA'] || keys['ArrowLeft']) dx1 = -1;
+                if (keys['KeyD'] || keys['ArrowRight']) dx1 = 1;
+                if (joystickActive) dx1 = joystickData.x;
 
-            player1.x += dx1 * player1.speed;
-            player1.x = Math.max(-12, Math.min(12, player1.x));
-            player1.mesh.position.set(player1.x, GAME_Y_PLANE, player1.z);
-            player1.mesh.rotation.z = -dx1 * 0.3;
+                player1.x += dx1 * player1.speed;
+                player1.x = Math.max(-12, Math.min(12, player1.x));
 
-            // Tir J1 (Espace)
-            if (player1.fireCooldown > 0) player1.fireCooldown--;
-            if (keys['Space'] && player1.fireCooldown === 0) {
-                playSound('laser');
-                let dmg = gameData.upgrades.damage;
-                let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
-                bGeo.rotateX(Math.PI / 2);
-                let bMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-                let bMesh = new THREE.Mesh(bGeo, bMat);
-                bMesh.position.set(player1.x, GAME_Y_PLANE, player1.z - 1);
-                scene.add(bMesh);
-                bullets.push({ mesh: bMesh, damage: dmg, owner: 1 });
-                player1.fireCooldown = Math.max(4, 15 - gameData.upgrades.fireRate * 2);
+                if (player1.fireCooldown > 0) player1.fireCooldown--;
+                let p1Color = gameData.selectedShip === 0 ? 0x00f3ff : gameData.selectedShip === 1 ? 0xffaa00 : 0xff0055;
+                if (keys['Space'] && player1.fireCooldown === 0) {
+                    fireBullet(player1, p1Color, 1);
+                    player1.fireCooldown = Math.max(4, 15 - gameData.upgrades.fireRate * 2);
+                }
             }
 
-            // --- CONTRÔLES JOUEUR 2 (Gaucher : J et L) ---
+            // Contrôles Joueur 2
             if (isCoop) {
-                let dx2 = 0;
-                if (keys['KeyJ']) dx2 = -1;
-                if (keys['KeyL']) dx2 = 1;
+                if (isHost) {
+                    // L'hôte gère J2 s'il est joué localement ou attend les data du client
+                } else {
+                    // Si on est le client (Joueur 2), on envoie nos mouvements à l'hôte
+                    let dx2 = 0;
+                    if (keys['KeyJ'] || keys['ArrowLeft']) dx2 = -1;
+                    if (keys['KeyL'] || keys['ArrowRight']) dx2 = 1;
+                    player2.x += dx2 * player2.speed;
+                    player2.x = Math.max(-12, Math.min(12, player2.x));
 
-                player2.x += dx2 * player2.speed;
-                player2.x = Math.max(-12, Math.min(12, player2.x));
-                player2.mesh.position.set(player2.x, GAME_Y_PLANE, player2.z);
-                player2.mesh.rotation.z = -dx2 * 0.3;
+                    if (player2.fireCooldown > 0) player2.fireCooldown--;
+                    let fireP2 = false;
+                    if (keys['Enter']) { fireP2 = true; player2.fireCooldown = 10; }
 
-                // Tir J2 (Touche Entrée / Enter)
-                if (player2.fireCooldown > 0) player2.fireCooldown--;
-                if (keys['Enter'] && player2.fireCooldown === 0) {
-                    playSound('laser');
-                    let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
-                    bGeo.rotateX(Math.PI / 2);
-                    let bMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-                    let bMesh = new THREE.Mesh(bGeo, bMat);
-                    bMesh.position.set(player2.x, GAME_Y_PLANE, player2.z - 1);
-                    scene.add(bMesh);
-                    bullets.push({ mesh: bMesh, damage: 1, owner: 2 });
-                    player2.fireCooldown = 10;
-                }
-            }
-
-            // --- UPDATE BULLETS ---
-            for(let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.mesh.position.z -= 1.2;
-                if (b.mesh.position.z < -80) {
-                    scene.remove(b.mesh);
-                    bullets.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE ENEMY BULLETS ---
-            for(let i = enemyBullets.length - 1; i >= 0; i--) {
-                let eb = enemyBullets[i];
-                eb.mesh.position.add(eb.velocity);
-                if (eb.mesh.position.z > 25) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    continue;
-                }
-                if (player1.alive && eb.mesh.position.distanceTo(player1.mesh.position) < 1.2) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    player1.shield -= cfg.damageReceived;
-                    if (player1.shield <= 0) {
-                        player1.alive = false;
-                        scene.remove(player1.mesh);
+                    if (conn && conn.open) {
+                        conn.send({ type: 'INPUT_P2', x: player2.x, fire: fireP2 });
                     }
-                    continue;
-                }
-                if (isCoop && player2.alive && eb.mesh.position.distanceTo(player2.mesh.position) < 1.2) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    player2.shield -= cfg.damageReceived;
-                    if (player2.shield <= 0) {
-                        player2.alive = false;
-                        scene.remove(player2.mesh);
-                    }
-                    continue;
                 }
             }
 
-            // --- UPDATE ENEMIES ---
-            for(let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i];
-                e.mesh.position.z += e.speed;
-                e.mesh.rotation.y += 0.02;
+            // Mise à jour des meshes des joueurs
+            if (player1.mesh) { player1.mesh.position.set(player1.x, GAME_Y_PLANE, player1.z); }
+            if (isCoop && player2.mesh) { player2.mesh.position.set(player2.x, GAME_Y_PLANE, player2.z); }
 
-                e.shootTimer++;
-                if (e.shootTimer > cfg.enemyShootTimer) {
-                    e.shootTimer = 0;
-                    let ebGeo = new THREE.SphereGeometry(0.3, 8, 8);
-                    let ebMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
-                    let ebMesh = new THREE.Mesh(ebGeo, ebMat);
-                    ebMesh.position.copy(e.mesh.position);
-                    let targetPos = player1.mesh.position;
-                    let dir = new THREE.Vector3().subVectors(targetPos, e.mesh.position).normalize().multiplyScalar(0.4);
-                    dir.y = 0;
-                    scene.add(ebMesh);
-                    enemyBullets.push({ mesh: ebMesh, velocity: dir });
+            // Si Hôte, simulation globale partagée et synchro réseau
+            if (!isCoop || isHost) {
+                for(let i = bullets.length - 1; i >= 0; i--) {
+                    let b = bullets[i];
+                    b.mesh.position.z -= 1.2;
+                    if (b.mesh.position.z < -80) { scene.remove(b.mesh); bullets.splice(i, 1); }
                 }
 
-                for(let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    if (e.mesh.position.distanceTo(b.mesh.position) < 1.5) {
-                        e.hp -= b.damage;
-                        scene.remove(b.mesh);
-                        bullets.splice(j, 1);
-
-                        if (e.hp <= 0) {
-                            createExplosion(e.mesh.position);
-                            if (Math.random() < 0.3) spawnPowerup(e.mesh.position);
-                            scene.remove(e.mesh);
-                            enemies.splice(i, 1);
-                            score += 100;
-                            sessionCredits += 10;
-                            break;
-                        }
+                for(let i = enemyBullets.length - 1; i >= 0; i--) {
+                    let eb = enemyBullets[i];
+                    eb.mesh.position.add(eb.velocity);
+                    if (eb.mesh.position.z > 25) { scene.remove(eb.mesh); enemyBullets.splice(i, 1); continue; }
+                    if (player1.alive && eb.mesh.position.distanceTo(player1.mesh.position) < 1.2) {
+                        scene.remove(eb.mesh); enemyBullets.splice(i, 1);
+                        player1.shield -= cfg.damageReceived;
+                        if (player1.shield <= 0) player1.alive = false;
+                        continue;
+                    }
+                    if (isCoop && player2.alive && eb.mesh.position.distanceTo(player2.mesh.position) < 1.2) {
+                        scene.remove(eb.mesh); enemyBullets.splice(i, 1);
+                        player2.shield -= cfg.damageReceived;
+                        if (player2.shield <= 0) player2.alive = false;
+                        continue;
                     }
                 }
 
-                if (player1.alive && e.mesh.position.distanceTo(player1.mesh.position) < 1.5) {
-                    player1.shield -= (cfg.damageReceived + 15);
-                    createExplosion(e.mesh.position);
-                    scene.remove(e.mesh);
-                    enemies.splice(i, 1);
-                    if (player1.shield <= 0) { player1.alive = false; scene.remove(player1.mesh); }
-                }
-
-                if (e && e.mesh.position.z > 25) {
-                    scene.remove(e.mesh);
-                    enemies.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE BOSS ---
-            if (boss) {
-                boss.mesh.position.z += 0.05;
-                if (boss.mesh.position.z > -15) boss.mesh.position.z = -15;
-                boss.mesh.rotation.y += 0.01;
-
-                boss.shootTimer++;
-                if (boss.shootTimer > 40) {
-                    boss.shootTimer = 0;
-                    for(let a = -1; a <= 1; a += 2) {
-                        let ebGeo = new THREE.SphereGeometry(0.4, 8, 8);
-                        let ebMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-                        let ebMesh = new THREE.Mesh(ebGeo, ebMat);
-                        ebMesh.position.copy(boss.mesh.position).add(new THREE.Vector3(a * 2, 0, 0));
+                for(let i = enemies.length - 1; i >= 0; i--) {
+                    let e = enemies[i];
+                    e.mesh.position.z += e.speed;
+                    e.shootTimer++;
+                    if (e.shootTimer > cfg.enemyShootTimer) {
+                        e.shootTimer = 0;
+                        let ebMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
+                        ebMesh.position.copy(e.mesh.position);
+                        let dir = new THREE.Vector3().subVectors(player1.mesh.position, e.mesh.position).normalize().multiplyScalar(0.4);
+                        dir.y = 0;
                         scene.add(ebMesh);
-                        enemyBullets.push({ mesh: ebMesh, velocity: new THREE.Vector3(a * 0.1, 0, 0.5) });
+                        enemyBullets.push({ mesh: ebMesh, velocity: dir });
                     }
-                }
 
-                for(let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    if (boss.mesh.position.distanceTo(b.mesh.position) < 2.5) {
-                        boss.hp -= b.damage;
-                        scene.remove(b.mesh);
-                        bullets.splice(j, 1);
-
-                        let hpPercent = Math.max(0, (boss.hp / boss.maxHp) * 100);
-                        document.getElementById('boss-hp-bar').style.width = hpPercent + '%';
-                        document.getElementById('boss-hp-text').innerText = Math.round(hpPercent) + '%';
-
-                        if (boss.hp <= 0) {
-                            createExplosion(boss.mesh.position);
-                            createExplosion(boss.mesh.position);
-                            scene.remove(boss.mesh);
-                            boss = null;
-                            document.getElementById('boss-hud').classList.add('hidden');
-                            score += 1000;
-                            sessionCredits += 150;
-                            wave++;
-                            spawnWave();
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let b = bullets[j];
+                        if (e.mesh.position.distanceTo(b.mesh.position) < 1.5) {
+                            e.hp -= b.damage; scene.remove(b.mesh); bullets.splice(j, 1);
+                            if (e.hp <= 0) {
+                                createExplosion(e.mesh.position);
+                                if (Math.random() < 0.3) spawnPowerup(e.mesh.position);
+                                scene.remove(e.mesh); enemies.splice(i, 1);
+                                score += 100; sessionCredits += 10;
+                                break;
+                            }
                         }
                     }
                 }
-            }
 
-            // --- UPDATE POWERUPS ---
-            for(let i = powerups.length - 1; i >= 0; i--) {
-                let p = powerups[i];
-                p.mesh.position.z += 0.4;
-                p.mesh.rotation.y += 0.05;
+                if (boss) {
+                    boss.mesh.position.z += 0.05;
+                    if (boss.mesh.position.z > -15) boss.mesh.position.z = -15;
+                    for(let j = bullets.length - 1; j >= 0; j--) {
+                        let b = bullets[j];
+                        if (boss.mesh.position.distanceTo(b.mesh.position) < 2.5) {
+                            boss.hp -= b.damage; scene.remove(b.mesh); bullets.splice(j, 1);
+                            let hpPct = Math.max(0, (boss.hp / boss.maxHp) * 100);
+                            document.getElementById('boss-hp-bar').style.width = hpPct + '%';
+                            document.getElementById('boss-hp-text').innerText = Math.round(hpPct) + '%';
+                            if (boss.hp <= 0) {
+                                createExplosion(boss.mesh.position); scene.remove(boss.mesh);
+                                boss = null; document.getElementById('boss-hud').classList.add('hidden');
+                                score += 1000; sessionCredits += 150; wave++; spawnWave();
+                            }
+                        }
+                    }
+                }
 
-                if (player1.alive && p.mesh.position.distanceTo(player1.mesh.position) < 2) {
-                    playSound('powerup');
-                    player1.shield = Math.min(player1.maxShield, player1.shield + 40);
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                    continue;
-                }
-                if (isCoop && player2.alive && p.mesh.position.distanceTo(player2.mesh.position) < 2) {
-                    playSound('powerup');
-                    player2.shield = Math.min(player2.maxShield, player2.shield + 40);
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                    continue;
-                }
-                if (p.mesh.position.z > 20) {
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE PARTICLES ---
-            for(let i = particles.length - 1; i >= 0; i--) {
-                let pt = particles[i];
-                pt.mesh.position.add(pt.velocity);
-                pt.life--;
-                if (pt.life <= 0) {
-                    scene.remove(pt.mesh);
-                    particles.splice(i, 1);
+                if (isCoop && conn && conn.open) {
+                    conn.send({
+                        type: 'SYNC_STATE',
+                        score: score, wave: wave,
+                        p1x: player1.x, p1Shield: player1.shield,
+                        p2x: player2.x, p2Shield: player2.shield
+                    });
                 }
             }
 
-            if (enemies.length === 0 && !boss && gameState === 'PLAYING') {
-                wave++;
-                spawnWave();
+            // Gestion fin de vague & Game Over
+            if (enemies.length === 0 && !boss && gameState === 'PLAYING' && (!isCoop || isHost)) {
+                wave++; spawnWave();
             }
 
-            let p1Dead = !player1.alive;
-            let p2Dead = isCoop && !player2.alive;
-            if (p1Dead && (!isCoop || p2Dead)) {
+            if (!player1.alive || (isCoop && !player2.alive)) {
                 gameState = 'GAMEOVER';
                 gameData.credits += sessionCredits;
                 if (score > gameData.highScore) gameData.highScore = score;
                 saveGame();
-
                 document.getElementById('hud-top').classList.add('hidden');
                 document.getElementById('gameover-screen').classList.remove('hidden');
                 document.getElementById('final-score').innerText = score;
                 document.getElementById('final-credits').innerText = sessionCredits;
             }
 
+            // UI HUD Update
             document.getElementById('score-display').innerText = String(score).padStart(6, '0');
             document.getElementById('wave-display').innerText = wave;
             document.getElementById('credits-display').innerText = gameData.credits;
-            
-            let p1HpPct = Math.max(0, (player1.shield / player1.maxShield) * 100);
-            document.getElementById('shield-bar-1').style.width = p1HpPct + '%';
-
+            document.getElementById('shield-bar-1').style.width = Math.max(0, (player1.shield / player1.maxShield) * 100) + '%';
             if (isCoop) {
-                let p2HpPct = Math.max(0, (player2.shield / player2.maxShield) * 100);
-                document.getElementById('shield-bar-2').style.width = p2HpPct + '%';
+                document.getElementById('shield-bar-2').style.width = Math.max(0, (player2.shield / player2.maxShield) * 100) + '%';
             }
         }
 
