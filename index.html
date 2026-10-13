@@ -1,1332 +1,577 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArcadeVerse - Retro Multi-Game & Pong Hub</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        arcade: {
-                            dark: '#0a0915',
-                            card: '#131127',
-                            border: '#2a2650',
-                            neonPink: '#ff007f',
-                            neonCyan: '#00f0ff',
-                            neonYellow: '#ffe600',
-                            neonPurple: '#9d00ff'
-                        }
-                    },
-                    fontFamily: {
-                        arcade: ['Courier New', monospace]
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PeerJS for P2P Multiplayer WebRTC -->
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <title>Retro Arcade Hub - P2P Multiplayer & Games</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-
-        body {
-            font-family: 'VT323', monospace;
-            background-color: #0a0915;
-            color: #fff;
-            overflow-x: hidden;
-            user-select: none;
-        }
-
-        .font-pixel {
-            font-family: 'Press Start 2P', monospace;
-        }
-
-        .neon-glow-pink {
-            text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 30px #ff007f;
-        }
-
-        .neon-glow-cyan {
-            text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff, 0 0 30px #00f0ff;
-        }
-
-        .neon-box-cyan {
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2);
-        }
-
-        .neon-box-pink {
-            box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 15px rgba(255, 0, 127, 0.2);
-        }
-
-        .crt-overlay {
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 4px, 6px 100%;
-            pointer-events: none;
-        }
-
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #131127;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #00f0ff;
-            border-radius: 4px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        body { font-family: 'Orbitron', sans-serif; background: #030008; color: #fff; overflow-x: hidden; user-select: none; }
+        .neon-glow-cyan { text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff; }
+        .neon-glow-magenta { text-shadow: 0 0 10px #ff0055, 0 0 20px #ff0055; }
+        .neon-box { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); border: 1px solid rgba(0, 243, 255, 0.5); background: rgba(3, 0, 8, 0.85); }
+        .neon-box-magenta { box-shadow: 0 0 15px rgba(255, 0, 85, 0.3); border: 1px solid rgba(255, 0, 85, 0.5); background: rgba(8, 0, 3, 0.85); }
+        .scanlines { background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 6px 100%; pointer-events: none; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+<body class="relative w-screen h-screen flex flex-col justify-between items-center p-4">
 
-    <!-- CRT Screen Lines Overlay -->
-    <div class="crt-overlay fixed inset-0 z-50 pointer-events-none"></div>
+    <div class="absolute inset-0 scanlines z-50 pointer-events-none"></div>
 
-    <header class="border-b border-arcade-border bg-arcade-card/80 backdrop-blur sticky top-0 z-40 px-4 py-3">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="app.showMenu()">
-                <div class="w-10 h-10 bg-gradient-to-br from-arcade-neonPink to-arcade-neonCyan rounded-lg flex items-center justify-center neon-box-cyan">
-                    <i class="fa-solid fa-gamepad text-black text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-pixel tracking-wider text-arcade-neonCyan neon-glow-cyan">ARCADEVERSE</h1>
-                    <p class="text-xs text-gray-400">Retro P2P Multiplayer & Mini-Games Hub</p>
-                </div>
-            </div>
-
-            <!-- Global Controls / Stats -->
-            <div class="flex items-center space-x-4">
-                <button onclick="app.toggleSound()" id="soundToggleBtn" class="px-3 py-1.5 bg-arcade-border hover:bg-arcade-neonCyan hover:text-black transition rounded border border-arcade-neonCyan/40 text-sm flex items-center space-x-2">
-                    <i id="soundIcon" class="fa-solid fa-volume-high text-arcade-neonCyan"></i>
-                    <span id="soundText" class="font-pixel text-[10px]">SOUND: ON</span>
-                </button>
-                <button onclick="app.showLeaderboardModal()" class="px-3 py-1.5 bg-arcade-border hover:bg-arcade-neonPink hover:text-black transition rounded border border-arcade-neonPink/40 text-sm flex items-center space-x-2">
-                    <i class="fa-solid fa-trophy text-arcade-neonPink"></i>
-                    <span class="font-pixel text-[10px]">SCORES</span>
-                </button>
-            </div>
+    <header id="main-header" class="w-full max-w-4xl flex justify-between items-center z-20 py-4 border-b border-cyan-500/30">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 tracking-wider neon-glow-cyan">ARCADE HUB</h1>
+            <p class="text-xs text-cyan-300/70 tracking-widest">RETRO EDITION // MULTIPLAYER</p>
+        </div>
+        <div id="hub-credits" class="neon-box px-4 py-2 rounded text-xs text-yellow-300 font-bold">
+            CRÉDITS 🪙 <span id="global-credits">100</span>
         </div>
     </header>
 
-    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center items-center">
-        
-        <!-- VIEW 1: GAME HUB MENU -->
-        <div id="hubView" class="w-full space-y-8 py-4">
-            <div class="text-center space-y-2">
-                <h2 class="text-3xl sm:text-5xl font-pixel text-arcade-neonPink neon-glow-pink">SELECT YOUR GAME</h2>
-                <p class="text-lg sm:text-xl text-gray-400">Play Solo against AI or host an online WebRTC P2P multiplayer room with friends!</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <!-- Retro Pong Card -->
-                <div class="bg-arcade-card border-2 border-arcade-neonCyan rounded-xl p-6 neon-box-cyan flex flex-col justify-between transition transform hover:-translate-y-1">
-                    <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2.5 py-1 bg-arcade-neonCyan/20 text-arcade-neonCyan text-xs font-pixel rounded">P2P MULTIPLAYER</span>
-                            <i class="fa-solid fa-table-tennis-paddle-ball text-3xl text-arcade-neonCyan"></i>
-                        </div>
-                        <h3 class="text-2xl font-pixel text-white mb-2">RETRO PONG</h3>
-                        <p class="text-gray-300 text-sm mb-4">The legendary arcade classic. Play 1v1 online with a generated room code or practice offline against the AI robot.</p>
-                    </div>
-                    <div class="space-y-2">
-                        <button onclick="app.launchPongLobby()" class="w-full py-3 bg-arcade-neonCyan text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-cyan-500/30">
-                            PLAY PONG (MULTIPLAYER / SOLO)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Cyber Snake Card -->
-                <div class="bg-arcade-card border-2 border-arcade-neonPink rounded-xl p-6 neon-box-pink flex flex-col justify-between transition transform hover:-translate-y-1">
-                    <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2.5 py-1 bg-arcade-neonPink/20 text-arcade-neonPink text-xs font-pixel rounded">SOLO ARCADE</span>
-                            <i class="fa-solid fa-worm text-3xl text-arcade-neonPink"></i>
-                        </div>
-                        <h3 class="text-2xl font-pixel text-white mb-2">NEON SNAKE</h3>
-                        <p class="text-gray-300 text-sm mb-4">Eat glowing energy pods, grow longer, and avoid hitting the glowing neon arena borders or your own tail.</p>
-                    </div>
-                    <div>
-                        <button onclick="app.launchSnake()" class="w-full py-3 bg-arcade-neonPink text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-pink-500/30">
-                            PLAY SNAKE
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Brick Breaker Card -->
-                <div class="bg-arcade-card border-2 border-arcade-neonYellow rounded-xl p-6 shadow-[0_0_15px_rgba(255,230,0,0.3)] flex flex-col justify-between transition transform hover:-translate-y-1">
-                    <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="px-2.5 py-1 bg-arcade-neonYellow/20 text-arcade-neonYellow text-xs font-pixel rounded">SOLO ARCADE</span>
-                            <i class="fa-solid fa-cubes text-3xl text-arcade-neonYellow"></i>
-                        </div>
-                        <h3 class="text-2xl font-pixel text-white mb-2">BLOCK BREAKER</h3>
-                        <p class="text-gray-300 text-sm mb-4">Destroy glowing crystal arrays with your energy paddle and high-velocity plasma ball across multiple levels.</p>
-                    </div>
-                    <div>
-                        <button onclick="app.launchBrickBreaker()" class="w-full py-3 bg-arcade-neonYellow text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-yellow-500/30">
-                            PLAY BREAKER
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- MAIN MENU SCREEN -->
+    <div id="hub-screen" class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center z-20 gap-6 my-auto">
+        <div class="text-center mb-4">
+            <h2 class="text-4xl md:text-5xl font-black text-cyan-300 neon-glow-cyan">CHOISISSEZ VOTRE JEU</h2>
+            <p class="text-sm text-gray-400 mt-2">Affrontez l'IA ou jouez en mode multijoueur !</p>
         </div>
 
-        <!-- VIEW 2: PONG MULTIPLAYER LOBBY -->
-        <div id="pongLobbyView" class="hidden w-full max-w-xl mx-auto space-y-6 bg-arcade-card border border-arcade-border p-6 sm:p-8 rounded-2xl neon-box-cyan">
-            <div class="flex items-center justify-between border-b border-arcade-border pb-4">
-                <h2 class="text-2xl font-pixel text-arcade-neonCyan">RETRO PONG LOBBY</h2>
-                <button onclick="app.showMenu()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-xl"></i></button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+            <!-- Pong Card -->
+            <div onclick="openPongMenu()" class="neon-box p-6 rounded-xl cursor-pointer hover:border-cyan-300 transition transform hover:-translate-y-1 flex flex-col items-center text-center">
+                <div class="text-4xl mb-3">🏓</div>
+                <h3 class="text-xl font-bold text-cyan-300">CYBER PONG</h3>
+                <p class="text-xs text-gray-400 mt-2">Solo vs IA ou Vrai Multijoueur en réseau.</p>
+                <span class="mt-6 text-xs bg-cyan-950 px-4 py-1.5 rounded text-cyan-300 font-bold">JOUER</span>
             </div>
 
-            <div class="space-y-6">
-                <!-- Mode Selection -->
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="pongGame.setMode('solo')" id="pongModeSoloBtn" class="p-4 rounded-xl border-2 border-arcade-neonCyan bg-arcade-neonCyan/10 font-pixel text-sm text-center transition">
-                        <i class="fa-solid fa-robot block text-2xl mb-2 text-arcade-neonCyan"></i>
-                        SOLO VS AI
-                    </button>
-                    <button onclick="pongGame.setMode('multi')" id="pongModeMultiBtn" class="p-4 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-sm text-center transition">
-                        <i class="fa-solid fa-users block text-2xl mb-2 text-arcade-neonPink"></i>
-                        P2P MULTIPLAYER
-                    </button>
-                </div>
-
-                <!-- Solo options -->
-                <div id="pongSoloOptions" class="space-y-4">
-                    <p class="text-sm text-gray-300">Test your reflexes against the computer AI. First to 5 points wins!</p>
-                    <button onclick="pongGame.startSoloGame()" class="w-full py-3 bg-arcade-neonCyan text-black font-pixel font-bold rounded hover:bg-white transition">
-                        START SOLO GAME
-                    </button>
-                </div>
-
-                <!-- Multiplayer options (PeerJS Host / Join) -->
-                <div id="pongMultiOptions" class="hidden space-y-6">
-                    <div class="p-4 bg-black/40 rounded-xl border border-arcade-border space-y-3">
-                        <h3 class="font-pixel text-arcade-neonPink text-sm">OPTION A: HOST A MATCH</h3>
-                        <p class="text-xs text-gray-400">Create a secure WebRTC room and share your room code with a friend.</p>
-                        <button onclick="pongGame.hostGame()" class="w-full py-2.5 bg-arcade-neonPink text-black font-pixel text-xs font-bold rounded hover:bg-white transition">
-                            HOST NEW ROOM
-                        </button>
-                        <div id="hostStatusArea" class="hidden space-y-2 pt-2">
-                            <p class="text-xs text-arcade-neonCyan font-mono" id="peerIdDisplay">Initializing room...</p>
-                            <div class="flex gap-2">
-                                <input type="text" id="shareLinkInput" readonly class="w-full bg-arcade-dark border border-arcade-border rounded px-2 py-1 text-xs text-gray-300 font-mono select-all">
-                                <button onclick="pongGame.copyShareLink()" class="px-3 bg-arcade-border hover:bg-arcade-neonCyan hover:text-black rounded text-xs font-pixel">COPY</button>
-                            </div>
-                            <p class="text-xs text-yellow-400 animate-pulse" id="waitingPeerMsg">Waiting for opponent to connect...</p>
-                        </div>
-                    </div>
-
-                    <div class="p-4 bg-black/40 rounded-xl border border-arcade-border space-y-3">
-                        <h3 class="font-pixel text-arcade-neonCyan text-sm">OPTION B: JOIN A MATCH</h3>
-                        <p class="text-xs text-gray-400">Enter the room code provided by your friend to join their game.</p>
-                        <div class="flex gap-2">
-                            <input type="text" id="joinCodeInput" placeholder="Paste Room Code..." class="w-full bg-arcade-dark border border-arcade-border rounded px-3 py-2 text-sm text-white font-mono focus:border-arcade-neonCyan outline-none z-10 relative">
-                            <button onclick="pongGame.joinGame()" class="px-4 bg-arcade-neonCyan text-black font-pixel text-xs font-bold rounded hover:bg-white transition">JOIN</button>
-                        </div>
-                        <p class="text-xs text-red-400 hidden" id="joinErrorMsg"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- VIEW 3: ACTIVE GAMEPLAY CONTAINER -->
-        <div id="gameplayView" class="hidden w-full max-w-4xl mx-auto flex flex-col items-center space-y-4">
-            <!-- Game HUD Header -->
-            <div class="w-full flex justify-between items-center bg-arcade-card border border-arcade-border px-6 py-3 rounded-xl">
-                <div class="flex items-center space-x-4">
-                    <button onclick="app.quitCurrentGame()" class="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-black rounded text-xs font-pixel transition">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> QUIT
-                    </button>
-                    <span id="activeGameTitle" class="font-pixel text-sm text-arcade-neonCyan">RETRO PONG</span>
-                </div>
-                <div id="gameScoreDisplay" class="font-pixel text-lg text-arcade-neonYellow">
-                    SCORE: <span id="currentScoreVal">0</span>
-                </div>
+            <!-- Snake Card -->
+            <div onclick="startSnakeGame()" class="neon-box p-6 rounded-xl cursor-pointer hover:border-cyan-300 transition transform hover:-translate-y-1 flex flex-col items-center text-center">
+                <div class="text-4xl mb-3">🐍</div>
+                <h3 class="text-xl font-bold text-pink-400">NEON SNAKE</h3>
+                <p class="text-xs text-gray-400 mt-2">Collectez les flux d'énergie avec des murs mortels.</p>
+                <span class="mt-6 text-xs bg-pink-950 px-4 py-1.5 rounded text-pink-300 font-bold">JOUER</span>
             </div>
 
-            <!-- Canvas Wrapper -->
-            <div id="canvasContainer" class="relative w-full bg-black border-2 border-arcade-border rounded-xl overflow-hidden shadow-2xl flex justify-center items-center">
-                <canvas id="gameCanvas" class="w-full h-auto block max-h-[70vh] object-contain"></canvas>
-
-                <!-- In-game overlay messages / countdowns -->
-                <div id="gameOverlay" class="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center space-y-4 hidden">
-                    <h3 id="overlayTitle" class="text-3xl sm:text-4xl font-pixel text-arcade-neonPink neon-glow-pink text-center">GAME OVER</h3>
-                    <p id="overlaySubtitle" class="text-gray-300 text-sm font-pixel text-center"></p>
-                    <button id="overlayActionBtn" onclick="app.restartCurrentGame()" class="px-6 py-3 bg-arcade-neonCyan text-black font-pixel text-sm font-bold rounded hover:bg-white transition shadow-lg">
-                        PLAY AGAIN
-                    </button>
-                </div>
+            <!-- Brick Breaker Card -->
+            <div onclick="startBreakerGame()" class="neon-box p-6 rounded-xl cursor-pointer hover:border-cyan-300 transition transform hover:-translate-y-1 flex flex-col items-center text-center">
+                <div class="text-4xl mb-3">🧱</div>
+                <h3 class="text-xl font-bold text-yellow-400">BREAKOUT 3000</h3>
+                <p class="text-xs text-gray-400 mt-2">Détruisez les blocs de données avec votre raquette.</p>
+                <span class="mt-6 text-xs bg-yellow-950 px-4 py-1.5 rounded text-yellow-300 font-bold">JOUER</span>
             </div>
-
-            <!-- Mobile Controls / Instructions Bar -->
-            <div id="controlsHint" class="text-center text-xs text-gray-400 font-pixel">
-                <span class="sm:hidden">Use On-Screen buttons or Touch/Drag</span>
-                <span class="hidden sm:inline">Use W/S or Arrow Keys to move paddle. Press ESC to quit.</span>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Leaderboard Modal -->
-    <div id="leaderboardModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-arcade-card border-2 border-arcade-neonPink rounded-2xl max-w-md w-full p-6 space-y-6 neon-box-pink">
-            <div class="flex justify-between items-center border-b border-arcade-border pb-3">
-                <h3 class="font-pixel text-arcade-neonPink text-lg">HIGH SCORES</h3>
-                <button onclick="app.closeLeaderboardModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <h4 class="text-xs font-pixel text-arcade-neonCyan mb-2">NEON SNAKE</h4>
-                    <div id="snakeHighScoreList" class="bg-black/40 rounded-lg p-3 text-sm font-mono text-gray-300 flex justify-between">
-                        <span>Best Score</span>
-                        <span id="snakeBestScoreVal" class="text-arcade-neonYellow font-bold">0</span>
-                    </div>
-                </div>
-                <div>
-                    <h4 class="text-xs font-pixel text-arcade-neonYellow mb-2">BLOCK BREAKER</h4>
-                    <div id="breakerHighScoreList" class="bg-black/40 rounded-lg p-3 text-sm font-mono text-gray-300 flex justify-between">
-                        <span>Best Score</span>
-                        <span id="breakerBestScoreVal" class="text-arcade-neonYellow font-bold">0</span>
-                    </div>
-                </div>
-            </div>
-            <button onclick="app.closeLeaderboardModal()" class="w-full py-2.5 bg-arcade-border hover:bg-arcade-neonPink hover:text-black rounded font-pixel text-xs transition">
-                CLOSE
-            </button>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 bg-arcade-card border border-arcade-neonCyan px-4 py-3 rounded-xl shadow-2xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3">
-        <i id="toastIcon" class="fa-solid fa-circle-check text-arcade-neonCyan text-xl"></i>
-        <div>
-            <h4 id="toastTitle" class="font-pixel text-xs text-white">NOTIFICATION</h4>
-            <p id="toastMessage" class="text-xs text-gray-300">Action completed successfully.</p>
+    <!-- PONG SUB-MENU -->
+    <div id="pong-menu-screen" class="w-full max-w-lg flex-1 hidden flex-col items-center justify-center z-20 gap-6 my-auto">
+        <h2 class="text-3xl font-black text-cyan-300 neon-glow-cyan text-center">CYBER PONG</h2>
+        <div class="neon-box p-6 rounded-xl w-full flex flex-col gap-4">
+            <button onclick="startPongSolo()" class="py-4 bg-cyan-600/40 border border-cyan-400 font-bold rounded text-cyan-200 hover:bg-cyan-600 transition text-center">MODE SOLO (VS IA)</button>
+            <button onclick="openPongMultiMenu()" class="py-4 bg-pink-600/40 border border-pink-400 font-bold rounded text-pink-200 hover:bg-pink-600 transition text-center">MULTIJOUEUR EN LIGNE</button>
+            <button onclick="returnToHub()" class="text-xs text-gray-400 hover:text-white transition text-center mt-2">Retour au menu principal</button>
         </div>
     </div>
 
-    <!-- Sound Engine -->
+    <!-- PONG MULTIPLAYER LOBBY -->
+    <div id="pong-multi-screen" class="w-full max-w-lg flex-1 hidden flex-col items-center justify-center z-20 gap-6 my-auto">
+        <h2 class="text-3xl font-black text-pink-400 neon-glow-magenta text-center">SALON MULTIJOUEUR</h2>
+        <div class="neon-box p-6 rounded-xl w-full flex flex-col gap-4">
+            <div id="host-section" class="flex flex-col gap-3">
+                <button onclick="hostPongGame()" class="py-3 bg-cyan-600 font-bold rounded text-white hover:bg-cyan-500 transition">CRÉER UN SALON</button>
+                <div id="room-code-display" class="hidden text-center text-sm font-bold text-cyan-300 bg-black/40 p-3 rounded border border-cyan-500/30">
+                    Code du salon : <span id="display-code" class="text-pink-400 text-lg tracking-widest font-black">---</span>
+                    <p class="text-xs text-gray-400 mt-1">Partagez ce code ou ouvrez un autre onglet pour rejoindre.</p>
+                </div>
+            </div>
+
+            <div class="border-t border-cyan-500/30 my-2"></div>
+
+            <div class="flex flex-col gap-2">
+                <span class="text-xs text-gray-400">Rejoindre un salon existant :</span>
+                <input id="pong-room-code-input" type="text" placeholder="Entrez le code (ex: AB12)" class="bg-black/50 border border-cyan-500/50 p-3 rounded text-center tracking-widest text-lg font-bold uppercase text-cyan-300 outline-none focus:border-cyan-400">
+                <button onclick="joinPongGame()" class="py-3 bg-pink-600 font-bold rounded text-white hover:bg-pink-500 transition mt-1">REJOINDRE LA PARTIE</button>
+            </div>
+
+            <div id="pong-lobby-status" class="text-center text-sm text-yellow-400 font-bold mt-2 min-h-[24px]"></div>
+            <button onclick="openPongMenu()" class="text-xs text-gray-400 hover:text-white transition text-center mt-2">Retour</button>
+        </div>
+    </div>
+
+    <!-- GAME CANVAS SCREEN -->
+    <div id="game-screen" class="w-full max-w-4xl flex-1 hidden flex-col items-center justify-center z-20 gap-4 my-auto">
+        <div class="w-full flex justify-between items-center neon-box px-4 py-2 rounded">
+            <div class="text-sm font-bold text-cyan-300" id="game-title-hud">PONG</div>
+            <div class="text-lg font-black text-yellow-300" id="game-score-hud">0 - 0</div>
+            <button onclick="returnToHub()" class="text-xs bg-red-950/80 border border-red-500 px-3 py-1 rounded text-red-300 hover:bg-red-900 transition">QUITTER</button>
+        </div>
+
+        <div class="relative w-full aspect-[4/3] max-h-[60vh] neon-box rounded-xl overflow-hidden flex items-center justify-center bg-black/80">
+            <canvas id="game-canvas" class="w-full h-full block"></canvas>
+            
+            <!-- Mobile touch control helper overlay for Pong -->
+            <div id="pong-touch-controls" class="absolute inset-x-0 bottom-4 flex justify-between px-6 pointer-events-none hidden">
+                <button id="btn-up" class="pointer-events-auto bg-cyan-600/60 border border-cyan-400 text-white w-16 h-16 rounded-full font-bold text-2xl flex items-center justify-center active:bg-cyan-500">▲</button>
+                <button id="btn-down" class="pointer-events-auto bg-cyan-600/60 border border-cyan-400 text-white w-16 h-16 rounded-full font-bold text-2xl flex items-center justify-center active:bg-cyan-500">▼</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        class SoundEngine {
-            constructor() {
-                this.enabled = true;
-                this.ctx = null;
-            }
-
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.ctx = new AudioContext();
-                }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            }
-
-            toggle() {
-                this.enabled = !this.enabled;
-                return this.enabled;
-            }
-
-            playBeep(freq = 440, type = 'square', duration = 0.1, gainVal = 0.1) {
-                if (!this.enabled) return;
-                try {
-                    this.init();
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = type;
-                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                    gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start();
-                    osc.stop(this.ctx.currentTime + duration);
-                } catch(e) {
-                    console.error("Audio error", e);
-                }
-            }
-
-            playPaddleHit() { this.playBeep(220, 'square', 0.08, 0.15); }
-            playWallHit() { this.playBeep(150, 'sine', 0.08, 0.1); }
-            playScore() {
-                this.playBeep(440, 'triangle', 0.1, 0.2);
-                setTimeout(() => this.playBeep(660, 'triangle', 0.15, 0.2), 100);
-            }
-            playEat() { this.playBeep(587.33, 'sine', 0.08, 0.1); }
-            playGameOver() {
-                this.playBeep(200, 'sawtooth', 0.2, 0.2);
-                setTimeout(() => this.playBeep(130, 'sawtooth', 0.4, 0.2), 200);
-            }
-            playBrickBreak() { this.playBeep(880, 'square', 0.08, 0.1); }
+        let credits = parseInt(localStorage.getItem('arcade_credits')) || 100;
+        function updateCreditsUI() {
+            document.getElementById('global-credits').innerText = credits;
+            localStorage.setItem('arcade_credits', credits);
         }
+        updateCreditsUI();
 
-        const soundEngine = new SoundEngine();
-    </script>
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        function playSound(type) {
+            if (!audioCtx) return;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            let now = audioCtx.currentTime;
 
-    <!-- App Controller & State Management -->
-    <script>
-        class AppController {
-            constructor() {
-                this.currentView = 'hub';
-                this.activeGame = null;
-                this.highScores = {
-                    snake: localStorage.getItem('arcade_snake_hs') || 0,
-                    breaker: localStorage.getItem('arcade_breaker_hs') || 0
-                };
-                this.updateHighScoreDisplay();
-            }
-
-            stopActiveGame() {
-                if (this.activeGame) {
-                    if (typeof this.activeGame.stop === 'function') {
-                        this.activeGame.stop();
-                    }
-                    this.activeGame = null;
-                }
-            }
-
-            showMenu() {
-                this.stopActiveGame();
-                document.getElementById('hubView').classList.remove('hidden');
-                document.getElementById('pongLobbyView').classList.add('hidden');
-                document.getElementById('gameplayView').classList.add('hidden');
-                document.getElementById('gameOverlay').classList.add('hidden');
-            }
-
-            launchPongLobby() {
-                this.stopActiveGame();
-                document.getElementById('hubView').classList.add('hidden');
-                document.getElementById('pongLobbyView').classList.remove('hidden');
-                document.getElementById('gameplayView').classList.add('hidden');
-                document.getElementById('gameOverlay').classList.add('hidden');
-                pongGame.initLobby();
-            }
-
-            launchSnake() {
-                this.stopActiveGame();
-                document.getElementById('hubView').classList.add('hidden');
-                document.getElementById('pongLobbyView').classList.add('hidden');
-                document.getElementById('gameplayView').classList.remove('hidden');
-                document.getElementById('gameOverlay').classList.add('hidden');
-                document.getElementById('activeGameTitle').innerText = 'NEON SNAKE';
-                document.getElementById('gameScoreDisplay').classList.remove('hidden');
-                
-                this.activeGame = snakeGame;
-                snakeGame.start();
-            }
-
-            launchBrickBreaker() {
-                this.stopActiveGame();
-                document.getElementById('hubView').classList.add('hidden');
-                document.getElementById('pongLobbyView').classList.add('hidden');
-                document.getElementById('gameplayView').classList.remove('hidden');
-                document.getElementById('gameOverlay').classList.add('hidden');
-                document.getElementById('activeGameTitle').innerText = 'BLOCK BREAKER';
-                document.getElementById('gameScoreDisplay').classList.remove('hidden');
-
-                this.activeGame = breakerGame;
-                breakerGame.start();
-            }
-
-            quitCurrentGame() {
-                if (this.activeGame === pongGame) {
-                    pongGame.stop();
-                    this.launchPongLobby();
-                } else {
-                    this.showMenu();
-                }
-            }
-
-            restartCurrentGame() {
-                document.getElementById('gameOverlay').classList.add('hidden');
-                if (this.activeGame) {
-                    this.activeGame.start();
-                }
-            }
-
-            toggleSound() {
-                const enabled = soundEngine.toggle();
-                const icon = document.getElementById('soundIcon');
-                const text = document.getElementById('soundText');
-                if (enabled) {
-                    icon.className = 'fa-solid fa-volume-high text-arcade-neonCyan';
-                    text.innerText = 'SOUND: ON';
-                } else {
-                    icon.className = 'fa-solid fa-volume-xmark text-red-400';
-                    text.innerText = 'SOUND: OFF';
-                }
-            }
-
-            showLeaderboardModal() {
-                document.getElementById('leaderboardModal').classList.remove('hidden');
-            }
-
-            closeLeaderboardModal() {
-                document.getElementById('leaderboardModal').classList.add('hidden');
-            }
-
-            updateHighScoreDisplay() {
-                document.getElementById('snakeBestScoreVal').innerText = this.highScores.snake;
-                document.getElementById('breakerBestScoreVal').innerText = this.highScores.breaker;
-            }
-
-            saveHighScore(game, score) {
-                if (score > this.highScores[game]) {
-                    this.highScores[game] = score;
-                    localStorage.setItem(`arcade_${game}_hs`, score);
-                    this.updateHighScoreDisplay();
-                    this.showToast('NEW HIGH SCORE!', `Congratulations! Score: ${score}`, 'fa-trophy', 'text-arcade-neonYellow');
-                }
-            }
-
-            showToast(title, message, iconClass = 'fa-circle-check', iconColor = 'text-arcade-neonCyan') {
-                const toast = document.getElementById('toastNotification');
-                document.getElementById('toastTitle').innerText = title;
-                document.getElementById('toastMessage').innerText = message;
-                const icon = document.getElementById('toastIcon');
-                icon.className = `fa-solid ${iconClass} ${iconColor} text-xl`;
-
-                toast.classList.remove('translate-y-20', 'opacity-0');
-                setTimeout(() => {
-                    toast.classList.add('translate-y-20', 'opacity-0');
-                }, 3000);
+            if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'score') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'hit') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.1);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
             }
         }
 
-        const app = new AppController();
-    </script>
-
-    <!-- Retro Pong P2P Multiplayer & Solo Game Engine -->
-    <script>
-        class PongGame {
-            constructor() {
-                this.canvas = document.getElementById('gameCanvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.mode = 'solo'; // 'solo' or 'multi'
-                this.role = 'host'; // 'host' or 'guest'
-                this.running = false;
-                this.peer = null;
-                this.conn = null;
-                this.animId = null;
-
-                // Canvas logical dimensions (Fixed aspect ratio so never cut off)
-                this.width = 800;
-                this.height = 500;
-                this.canvas.width = this.width;
-                this.canvas.height = this.height;
-
-                // Game entities
-                this.paddleWidth = 12;
-                this.paddleHeight = 90;
-                
-                this.player1 = { x: 30, y: this.height / 2 - 45, vy: 0, score: 0 };
-                this.player2 = { x: this.width - 42, y: this.height / 2 - 45, vy: 0, score: 0 };
-                this.ball = { x: this.width / 2, y: this.height / 2, vx: 5, vy: 3, radius: 10, speed: 6 };
-
-                this.keys = { w: false, s: false, up: false, down: false };
-                this.bindControls();
+        function hideAllScreens() {
+            document.getElementById('hub-screen').classList.add('hidden');
+            document.getElementById('pong-menu-screen').classList.add('hidden');
+            document.getElementById('pong-multi-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('pong-touch-controls').classList.add('hidden');
+            stopCurrentGameLoop();
+            if (multiChannel) {
+                multiChannel.close();
+                multiChannel = null;
             }
+        }
 
-            initLobby() {
-                this.setMode('solo');
-                this.stop();
-            }
+        function returnToHub() {
+            hideAllScreens();
+            document.getElementById('hub-screen').classList.remove('hidden');
+        }
 
-            setMode(mode) {
-                this.mode = mode;
-                const soloBtn = document.getElementById('pongModeSoloBtn');
-                const multiBtn = document.getElementById('pongModeMultiBtn');
-                const soloOpts = document.getElementById('pongSoloOptions');
-                const multiOpts = document.getElementById('pongMultiOptions');
+        function openPongMenu() {
+            hideAllScreens();
+            document.getElementById('pong-menu-screen').classList.remove('hidden');
+            document.getElementById('pong-menu-screen').classList.add('flex');
+        }
 
-                if (mode === 'solo') {
-                    soloBtn.className = 'p-4 rounded-xl border-2 border-arcade-neonCyan bg-arcade-neonCyan/10 font-pixel text-sm text-center transition';
-                    multiBtn.className = 'p-4 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-sm text-center transition';
-                    soloOpts.classList.remove('hidden');
-                    multiOpts.classList.add('hidden');
-                } else {
-                    multiBtn.className = 'p-4 rounded-xl border-2 border-arcade-neonPink bg-arcade-neonPink/10 font-pixel text-sm text-center transition';
-                    soloBtn.className = 'p-4 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-sm text-center transition';
-                    multiOpts.classList.remove('hidden');
-                    soloOpts.classList.add('hidden');
-                }
-            }
+        function openPongMultiMenu() {
+            hideAllScreens();
+            document.getElementById('pong-multi-screen').classList.remove('hidden');
+            document.getElementById('pong-multi-screen').classList.add('flex');
+            document.getElementById('room-code-display').classList.add('hidden');
+            document.getElementById('pong-lobby-status').innerText = '';
+        }
 
-            startSoloGame() {
-                document.getElementById('pongLobbyView').classList.add('hidden');
-                document.getElementById('gameplayView').classList.remove('hidden');
-                document.getElementById('activeGameTitle').innerText = 'RETRO PONG (SOLO)';
-                document.getElementById('gameScoreDisplay').classList.add('hidden');
+        let multiChannel = null;
+        let isHost = false;
+        let currentRoomCode = '';
 
-                this.player1.score = 0;
-                this.player2.score = 0;
-                this.player1.y = this.height / 2 - this.paddleHeight / 2;
-                this.player2.y = this.height / 2 - this.paddleHeight / 2;
-                this.resetBall();
-                this.running = true;
-                this.loop();
-            }
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for(let i=0; i<4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
 
-            hostGame() {
-                this.role = 'host';
-                document.getElementById('hostStatusArea').classList.remove('hidden');
-                document.getElementById('peerIdDisplay').innerText = 'Connecting to P2P relay...';
-                
-                if (this.peer) {
-                    try { this.peer.destroy(); } catch(e){}
-                }
+        function hostPongGame() {
+            initAudio();
+            isHost = true;
+            currentRoomCode = generateRoomCode();
+            
+            document.getElementById('display-code').innerText = currentRoomCode;
+            document.getElementById('room-code-display').classList.remove('hidden');
+            document.getElementById('pong-lobby-status').innerText = "Salon " + currentRoomCode + " créé ! En attente du joueur 2...";
 
-                // Create clean short alphanumeric peer id
-                const randomId = 'pong-' + Math.floor(Math.random() * 90000 + 10000);
-                this.peer = new Peer(randomId);
-
-                this.peer.on('open', (id) => {
-                    document.getElementById('peerIdDisplay').innerText = `Room Code: ${id}`;
-                    document.getElementById('shareLinkInput').value = id;
-                    app.showToast('Room Created', 'Share your room code with your friend!', 'fa-link', 'text-arcade-neonPink');
-                });
-
-                this.peer.on('connection', (connection) => {
-                    this.conn = connection;
-                    this.setupConnectionHandlers();
-                    document.getElementById('waitingPeerMsg').innerText = 'Opponent connected! Starting match...';
+            // Use BroadcastChannel & LocalStorage bridge for robust iframe sandbox compatibility
+            multiChannel = new BroadcastChannel('arcade_pong_' + currentRoomCode);
+            
+            multiChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'JOIN') {
+                    document.getElementById('pong-lobby-status').innerText = "Joueur 2 connecté ! Lancement...";
                     setTimeout(() => {
-                        this.startMultiplayerMatch();
-                    }, 1000);
-                });
-
-                this.peer.on('error', (err) => {
-                    console.error("PeerJS error:", err);
-                    document.getElementById('peerIdDisplay').innerText = 'Connection error. Retrying...';
-                });
-            }
-
-            joinGame() {
-                this.role = 'guest';
-                const code = document.getElementById('joinCodeInput').value.trim();
-                const errBox = document.getElementById('joinErrorMsg');
-                if (!code) {
-                    errBox.innerText = 'Please enter a valid room code.';
-                    errBox.classList.remove('hidden');
-                    return;
+                        launchPongMultiplayer(true);
+                    }, 800);
                 }
-                errBox.classList.add('hidden');
+            };
+        }
 
-                if (this.peer) {
-                    try { this.peer.destroy(); } catch(e){}
-                }
-
-                app.showToast('Connecting...', `Attempting to join room ${code}`, 'fa-spinner', 'text-arcade-neonCyan');
-
-                this.peer = new Peer();
-                this.peer.on('open', () => {
-                    this.conn = this.peer.connect(code, { reliable: true });
-                    this.setupConnectionHandlers();
-                });
-
-                this.peer.on('error', (err) => {
-                    console.error("PeerJS guest error:", err);
-                    errBox.innerText = 'Could not connect to room. Check code.';
-                    errBox.classList.remove('hidden');
-                });
+        function joinPongGame() {
+            initAudio();
+            isHost = false;
+            const inputCode = document.getElementById('pong-room-code-input').value.toUpperCase().trim();
+            if (inputCode.length !== 4) {
+                document.getElementById('pong-lobby-status').innerText = "Veuillez entrer un code de 4 caractères valide.";
+                return;
             }
 
-            setupConnectionHandlers() {
-                if (!this.conn) return;
+            currentRoomCode = inputCode;
+            document.getElementById('pong-lobby-status').innerText = "Connexion au salon " + currentRoomCode + "...";
 
-                this.conn.on('open', () => {
-                    if (this.role === 'guest') {
-                        app.showToast('Connected!', 'Joined multiplayer room successfully!', 'fa-check', 'text-arcade-neonCyan');
-                        this.startMultiplayerMatch();
-                    }
-                });
+            multiChannel = new BroadcastChannel('arcade_pong_' + currentRoomCode);
+            
+            // Announce joining
+            multiChannel.postMessage({ type: 'JOIN' });
+            
+            setTimeout(() => {
+                document.getElementById('pong-lobby-status').innerText = "Connecté ! Lancement de la partie...";
+                setTimeout(() => {
+                    launchPongMultiplayer(false);
+                }, 800);
+            }, 500);
+        }
 
-                this.conn.on('data', (data) => {
-                    if (this.role === 'host') {
-                        // Host receives guest paddle position
-                        if (data.type === 'paddle') {
-                            this.player2.y = data.y;
-                        }
-                    } else {
-                        // Guest receives authoritative state from host
-                        if (data.type === 'state') {
-                            this.player1.y = data.p1y;
-                            this.player2.y = data.p2y;
-                            this.ball.x = data.bx;
-                            this.ball.y = data.by;
-                            this.player1.score = data.s1;
-                            this.player2.score = data.s2;
-                        } else if (data.type === 'gameover') {
-                            this.endGame(data.winner);
-                        }
-                    }
-                });
+        function startPongSolo() {
+            initAudio();
+            hideAllScreens();
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            initPongGameEngine(false, false);
+        }
 
-                this.conn.on('close', () => {
-                    app.showToast('Disconnected', 'The opponent left the match.', 'fa-triangle-exclamation', 'text-red-400');
-                    if (this.running) {
-                        this.endGame('OPPONENT DISCONNECTED');
-                    }
-                });
-            }
+        function launchPongMultiplayer(asHost) {
+            hideAllScreens();
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('pong-touch-controls').classList.remove('hidden');
+            document.getElementById('pong-touch-controls').classList.add('flex');
+            initPongGameEngine(true, asHost);
+        }
 
-            startMultiplayerMatch() {
-                document.getElementById('pongLobbyView').classList.add('hidden');
-                document.getElementById('gameplayView').classList.remove('hidden');
-                document.getElementById('activeGameTitle').innerText = `RETRO PONG (${this.role.toUpperCase()})`;
-                document.getElementById('gameScoreDisplay').classList.add('hidden');
-
-                this.player1.score = 0;
-                this.player2.score = 0;
-                this.player1.y = this.height / 2 - this.paddleHeight / 2;
-                this.player2.y = this.height / 2 - this.paddleHeight / 2;
-                this.resetBall();
-                this.running = true;
-                this.loop();
-            }
-
-            copyShareLink() {
-                const input = document.getElementById('shareLinkInput');
-                input.select();
-                input.setSelectionRange(0, 99999);
-                try {
-                    document.execCommand('copy');
-                    app.showToast('Copied!', 'Room code copied to clipboard.', 'fa-clipboard', 'text-arcade-neonCyan');
-                } catch(e) {
-                    console.error(e);
-                }
-            }
-
-            bindControls() {
-                window.addEventListener('keydown', (e) => {
-                    if (e.key === 'w' || e.key === 'W') this.keys.w = true;
-                    if (e.key === 's' || e.key === 'S') this.keys.s = true;
-                    if (e.key === 'ArrowUp') this.keys.up = true;
-                    if (e.key === 'ArrowDown') this.keys.down = true;
-                    if (e.key === 'Escape' && app.activeGame === this) app.quitCurrentGame();
-                });
-
-                window.addEventListener('keyup', (e) => {
-                    if (e.key === 'w' || e.key === 'W') this.keys.w = false;
-                    if (e.key === 's' || e.key === 'S') this.keys.s = false;
-                    if (e.key === 'ArrowUp') this.keys.up = false;
-                    if (e.key === 'ArrowDown') this.keys.down = false;
-                });
-            }
-
-            resetBall() {
-                this.ball.x = this.width / 2;
-                this.ball.y = this.height / 2;
-                this.ball.speed = 6;
-                const angle = (Math.random() * Math.PI / 3) - (Math.PI / 6);
-                const dir = Math.random() > 0.5 ? 1 : -1;
-                this.ball.vx = dir * this.ball.speed * Math.cos(angle);
-                this.ball.vy = this.ball.speed * Math.sin(angle);
-            }
-
-            update() {
-                if (!this.running) return;
-
-                const paddleSpeed = 8;
-
-                if (this.mode === 'solo') {
-                    // Player 1 controls (W/S)
-                    if (this.keys.w || this.keys.up) this.player1.y -= paddleSpeed;
-                    if (this.keys.s || this.keys.down) this.player1.y += paddleSpeed;
-                    this.player1.y = Math.max(0, Math.min(this.height - this.paddleHeight, this.player1.y));
-
-                    // AI Player 2 controls
-                    const aiCenter = this.player2.y + this.paddleHeight / 2;
-                    if (aiCenter < this.ball.y - 15) {
-                        this.player2.y += paddleSpeed * 0.75;
-                    } else if (aiCenter > this.ball.y + 15) {
-                        this.player2.y -= paddleSpeed * 0.75;
-                    }
-                    this.player2.y = Math.max(0, Math.min(this.height - this.paddleHeight, this.player2.y));
-
-                    // Ball physics
-                    this.ball.x += this.ball.vx;
-                    this.ball.y += this.ball.vy;
-
-                    // Wall collision top/bottom
-                    if (this.ball.y - this.ball.radius <= 0 || this.ball.y + this.ball.radius >= this.height) {
-                        this.ball.vy *= -1;
-                        soundEngine.playWallHit();
-                    }
-
-                    // Paddle 1 collision
-                    if (this.ball.x - this.ball.radius <= this.player1.x + this.paddleWidth &&
-                        this.ball.y >= this.player1.y && this.ball.y <= this.player1.y + this.paddleHeight) {
-                        this.ball.vx *= -1;
-                        soundEngine.playPaddleHit();
-                        const deltaY = this.ball.y - (this.player1.y + this.paddleHeight / 2);
-                        this.ball.vy = deltaY * 0.25;
-                    }
-
-                    // Paddle 2 collision
-                    if (this.ball.x + this.ball.radius >= this.player2.x &&
-                        this.ball.y >= this.player2.y && this.ball.y <= this.player2.y + this.paddleHeight) {
-                        this.ball.vx *= -1;
-                        soundEngine.playPaddleHit();
-                        const deltaY = this.ball.y - (this.player2.y + this.paddleHeight / 2);
-                        this.ball.vy = deltaY * 0.25;
-                    }
-
-                    // Scoring
-                    if (this.ball.x < 0) {
-                        this.player2.score++;
-                        soundEngine.playScore();
-                        this.resetBall();
-                    } else if (this.ball.x > this.width) {
-                        this.player1.score++;
-                        soundEngine.playScore();
-                        this.resetBall();
-                    }
-
-                    // Win check (5 points)
-                    if (this.player1.score >= 5 || this.player2.score >= 5) {
-                        this.running = false;
-                        const winner = this.player1.score >= 5 ? 'YOU WIN!' : 'AI WINS!';
-                        this.endGame(winner);
-                    }
-
-                } else if (this.mode === 'multi') {
-                    if (this.role === 'host') {
-                        // Host controls Player 1
-                        if (this.keys.w || this.keys.up) this.player1.y -= paddleSpeed;
-                        if (this.keys.s || this.keys.down) this.player1.y += paddleSpeed;
-                        this.player1.y = Math.max(0, Math.min(this.height - this.paddleHeight, this.player1.y));
-
-                        // Ball physics
-                        this.ball.x += this.ball.vx;
-                        this.ball.y += this.ball.vy;
-
-                        if (this.ball.y - this.ball.radius <= 0 || this.ball.y + this.ball.radius >= this.height) {
-                            this.ball.vy *= -1;
-                            soundEngine.playWallHit();
-                        }
-
-                        // Paddle 1
-                        if (this.ball.x - this.ball.radius <= this.player1.x + this.paddleWidth &&
-                            this.ball.y >= this.player1.y && this.ball.y <= this.player1.y + this.paddleHeight) {
-                            this.ball.vx *= -1;
-                            soundEngine.playPaddleHit();
-                            const deltaY = this.ball.y - (this.player1.y + this.paddleHeight / 2);
-                            this.ball.vy = deltaY * 0.25;
-                        }
-
-                        // Paddle 2
-                        if (this.ball.x + this.ball.radius >= this.player2.x &&
-                            this.ball.y >= this.player2.y && this.ball.y <= this.player2.y + this.paddleHeight) {
-                            this.ball.vx *= -1;
-                            soundEngine.playPaddleHit();
-                            const deltaY = this.ball.y - (this.player2.y + this.paddleHeight / 2);
-                            this.ball.vy = deltaY * 0.25;
-                        }
-
-                        if (this.ball.x < 0) {
-                            this.player2.score++;
-                            soundEngine.playScore();
-                            this.resetBall();
-                        } else if (this.ball.x > this.width) {
-                            this.player1.score++;
-                            soundEngine.playScore();
-                            this.resetBall();
-                        }
-
-                        // Send state to guest
-                        if (this.conn && this.conn.open) {
-                            this.conn.send({
-                                type: 'state',
-                                p1y: this.player1.y,
-                                p2y: this.player2.y,
-                                bx: this.ball.x,
-                                by: this.ball.y,
-                                s1: this.player1.score,
-                                s2: this.player2.score
-                            });
-                        }
-
-                        if (this.player1.score >= 5 || this.player2.score >= 5) {
-                            this.running = false;
-                            const winner = this.player1.score >= 5 ? 'HOST WINS!' : 'GUEST WINS!';
-                            if (this.conn && this.conn.open) {
-                                this.conn.send({ type: 'gameover', winner: winner });
-                            }
-                            this.endGame(winner);
-                        }
-
-                    } else {
-                        // Guest controls Player 2
-                        if (this.keys.w || this.keys.up) this.player2.y -= paddleSpeed;
-                        if (this.keys.s || this.keys.down) this.player2.y += paddleSpeed;
-                        this.player2.y = Math.max(0, Math.min(this.height - this.paddleHeight, this.player2.y));
-
-                        // Send paddle pos to host
-                        if (this.conn && this.conn.open) {
-                            this.conn.send({ type: 'paddle', y: this.player2.y });
-                        }
-                    }
-                }
-            }
-
-            draw() {
-                // Clear background
-                this.ctx.fillStyle = '#0a0915';
-                this.ctx.fillRect(0, 0, this.width, this.height);
-
-                // Draw center net
-                this.ctx.strokeStyle = '#2a2650';
-                this.ctx.lineWidth = 4;
-                this.ctx.setLineDash([10, 10]);
-                this.ctx.beginPath();
-                this.ctx.moveTo(this.width / 2, 0);
-                this.ctx.lineTo(this.width / 2, this.height);
-                this.ctx.stroke();
-                this.ctx.setLineDash([]);
-
-                // Draw Paddle 1 (Cyan)
-                this.ctx.fillStyle = '#00f0ff';
-                this.ctx.shadowColor = '#00f0ff';
-                this.ctx.shadowBlur = 15;
-                this.ctx.fillRect(this.player1.x, this.player1.y, this.paddleWidth, this.paddleHeight);
-
-                // Draw Paddle 2 (Pink)
-                this.ctx.fillStyle = '#ff007f';
-                this.ctx.shadowColor = '#ff007f';
-                this.ctx.shadowBlur = 15;
-                this.ctx.fillRect(this.player2.x, this.player2.y, this.paddleWidth, this.paddleHeight);
-
-                // Draw Ball (Yellow)
-                this.ctx.fillStyle = '#ffe600';
-                this.ctx.shadowColor = '#ffe600';
-                this.ctx.shadowBlur = 15;
-                this.ctx.beginPath();
-                this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-                this.ctx.fill();
-
-                this.ctx.shadowBlur = 0; // reset shadow
-
-                // Draw Scores
-                this.ctx.font = 'bold 40px "Courier New", monospace';
-                this.ctx.fillStyle = '#00f0ff';
-                this.ctx.textAlign = 'center';
-                this.ctx.fillText(this.player1.score, this.width / 4, 60);
-
-                this.ctx.fillStyle = '#ff007f';
-                this.ctx.fillText(this.player2.score, (this.width / 4) * 3, 60);
-            }
-
-            loop() {
-                if (!this.running) return;
-                this.update();
-                this.draw();
-                this.animId = requestAnimationFrame(() => this.loop());
-            }
-
-            endGame(winnerTitle) {
-                soundEngine.playGameOver();
-                document.getElementById('overlayTitle').innerText = winnerTitle;
-                document.getElementById('overlaySubtitle').innerText = `Final Score: ${this.player1.score} - ${this.player2.score}`;
-                document.getElementById('gameOverlay').classList.remove('hidden');
-            }
-
-            stop() {
-                this.running = false;
-                if (this.animId) cancelAnimationFrame(this.animId);
-                if (this.peer) {
-                    try { this.peer.destroy(); } catch(e){}
-                    this.peer = null;
-                }
+        let currentGameInterval = null;
+        function stopCurrentGameLoop() {
+            if (currentGameInterval) {
+                cancelAnimationFrame(currentGameInterval);
+                clearInterval(currentGameInterval);
+                currentGameInterval = null;
             }
         }
 
-        const pongGame = new PongGame();
-    </script>
+        function initPongGameEngine(isMulti, asHost) {
+            document.getElementById('game-title-hud').innerText = isMulti ? (asHost ? "PONG MULTI // HÔTE (Joueur 1)" : "PONG MULTI // CLIENT (Joueur 2)") : "CYBER PONG (SOLO VS IA)";
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 800; canvas.height = 600;
 
-    <!-- Neon Snake Game Engine (with Visible Glowing Arena Borders) -->
-    <script>
-        class SnakeGame {
-            constructor() {
-                this.canvas = document.getElementById('gameCanvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.width = 600;
-                this.height = 600;
-                this.canvas.width = this.width;
-                this.canvas.height = this.height;
+            let paddleWidth = 16, paddleHeight = 100;
+            let p1Y = 250, p2Y = 250;
+            let ballX = 400, ballY = 300, ballVX = 5, ballVY = 3;
+            let p1Score = 0, p2Score = 0;
 
-                this.gridSize = 20;
-                this.tileCount = this.width / this.gridSize; // 30 tiles
-                this.snake = [];
-                this.food = { x: 0, y: 0 };
-                this.dx = 1;
-                this.dy = 0;
-                this.score = 0;
-                this.running = false;
-                this.gameInterval = null;
+            let keys = {};
+            window.onkeydown = (e) => keys[e.code] = true;
+            window.onkeyup = (e) => keys[e.code] = false;
 
-                this.bindControls();
-            }
+            let touchUp = false, touchDown = false;
+            const btnUp = document.getElementById('btn-up');
+            const btnDown = document.getElementById('btn-down');
+            btnUp.ontouchstart = () => touchUp = true;
+            btnUp.ontouchend = () => touchUp = false;
+            btnDown.ontouchstart = () => touchDown = true;
+            btnDown.ontouchend = () => touchDown = false;
 
-            start() {
-                this.snake = [
-                    { x: 15, y: 15 },
-                    { x: 14, y: 15 },
-                    { x: 13, y: 15 }
-                ];
-                this.dx = 1;
-                this.dy = 0;
-                this.score = 0;
-                document.getElementById('currentScoreVal').innerText = this.score;
-                this.spawnFood();
-                this.running = true;
-
-                if (this.gameInterval) clearInterval(this.gameInterval);
-                this.gameInterval = setInterval(() => this.tick(), 100);
-            }
-
-            spawnFood() {
-                // Spawn food inside the walls (index 1 to tileCount - 2)
-                this.food = {
-                    x: Math.floor(Math.random() * (this.tileCount - 4)) + 2,
-                    y: Math.floor(Math.random() * (this.tileCount - 4)) + 2
+            if (isMulti && multiChannel) {
+                multiChannel.onmessage = (event) => {
+                    const data = event.data;
+                    if (asHost) {
+                        if (data.paddleY !== undefined) p2Y = data.paddleY;
+                    } else {
+                        if (data.ballX !== undefined) {
+                            ballX = data.ballX;
+                            ballY = data.ballY;
+                            p1Y = data.p1Y;
+                            p1Score = data.p1Score;
+                            p2Score = data.p2Score;
+                        }
+                    }
                 };
-                for (let part of this.snake) {
-                    if (part.x === this.food.x && part.y === this.food.y) {
-                        this.spawnFood();
-                        break;
+            }
+
+            function loop() {
+                const myMoveSpeed = 8;
+                if (isMulti) {
+                    if (asHost) {
+                        if (keys['KeyW'] || keys['ArrowUp'] || touchUp) p1Y -= myMoveSpeed;
+                        if (keys['KeyS'] || keys['ArrowDown'] || touchDown) p1Y += myMoveSpeed;
+                        p1Y = Math.max(0, Math.min(canvas.height - paddleHeight, p1Y));
+                    } else {
+                        if (keys['KeyW'] || keys['ArrowUp'] || touchUp) p2Y -= myMoveSpeed;
+                        if (keys['KeyS'] || keys['ArrowDown'] || touchDown) p2Y += myMoveSpeed;
+                        p2Y = Math.max(0, Math.min(canvas.height - paddleHeight, p2Y));
+                        multiChannel.postMessage({ paddleY: p2Y });
+                    }
+                } else {
+                    if (keys['KeyW'] || keys['ArrowUp'] || touchUp) p1Y -= myMoveSpeed;
+                    if (keys['KeyS'] || keys['ArrowDown'] || touchDown) p1Y += myMoveSpeed;
+                    p1Y = Math.max(0, Math.min(canvas.height - paddleHeight, p1Y));
+
+                    let targetY = ballY - paddleHeight / 2;
+                    p2Y += (targetY - p2Y) * 0.08;
+                    p2Y = Math.max(0, Math.min(canvas.height - paddleHeight, p2Y));
+                }
+
+                if (!isMulti || asHost) {
+                    ballX += ballVX;
+                    ballY += ballVY;
+
+                    if (ballY <= 0 || ballY >= canvas.height) {
+                        ballVY *= -1;
+                        playSound('beep');
+                    }
+
+                    if (ballX <= 30 + paddleWidth && ballY >= p1Y && ballY <= p1Y + paddleHeight) {
+                        ballVX *= -1;
+                        ballVX *= 1.04;
+                        playSound('hit');
+                    }
+
+                    if (ballX >= canvas.width - 30 - paddleWidth && ballY >= p2Y && ballY <= p2Y + paddleHeight) {
+                        ballVX *= -1;
+                        ballVX *= 1.04;
+                        playSound('hit');
+                    }
+
+                    if (ballX < 0) {
+                        p2Score++;
+                        playSound('score');
+                        ballX = canvas.width / 2; ballY = canvas.height / 2; ballVX = 5;
+                    } else if (ballX > canvas.width) {
+                        p1Score++;
+                        playSound('score');
+                        ballX = canvas.width / 2; ballY = canvas.height / 2; ballVX = -5;
+                    }
+
+                    if (isMulti && asHost && multiChannel) {
+                        multiChannel.postMessage({
+                            ballX: ballX,
+                            ballY: ballY,
+                            p1Y: p1Y,
+                            p1Score: p1Score,
+                            p2Score: p2Score
+                        });
                     }
                 }
+
+                document.getElementById('game-score-hud').innerText = `${p1Score} - ${p2Score}`;
+
+                ctx.fillStyle = '#030008';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)';
+                ctx.setLineDash([10, 10]);
+                ctx.beginPath(); ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height); ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#00f3ff';
+                ctx.fillRect(30, p1Y, paddleWidth, paddleHeight);
+
+                ctx.fillStyle = '#ff0055';
+                ctx.fillRect(canvas.width - 30 - paddleWidth, p2Y, paddleWidth, paddleHeight);
+
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath(); ctx.arc(ballX, ballY, 10, 0, Math.PI * 2); ctx.fill();
+
+                currentGameInterval = requestAnimationFrame(loop);
             }
+            loop();
+        }
 
-            bindControls() {
-                window.addEventListener('keydown', (e) => {
-                    if (app.activeGame !== this || !this.running) return;
+        function startSnakeGame() {
+            initAudio();
+            hideAllScreens();
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('game-title-hud').innerText = "NEON SNAKE";
 
-                    if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && this.dy === 0) {
-                        this.dx = 0; this.dy = -1; e.preventDefault();
-                    } else if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && this.dy === 0) {
-                        this.dx = 0; this.dy = 1; e.preventDefault();
-                    } else if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && this.dx === 0) {
-                        this.dx = -1; this.dy = 0; e.preventDefault();
-                    } else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && this.dx === 0) {
-                        this.dx = 1; this.dy = 0; e.preventDefault();
-                    }
-                });
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600; canvas.height = 600;
+
+            const grid = 20;
+            let snake = [{x: 160, y: 160}, {x: 140, y: 160}, {x: 120, y: 160}];
+            let food = {x: 300, y: 300};
+            let dx = grid, dy = 0;
+            let score = 0;
+            let gameInterval = null;
+
+            window.onkeydown = (e) => {
+                if ((e.code === 'KeyA' || e.code === 'ArrowLeft') && dx === 0) { dx = -grid; dy = 0; }
+                if ((e.code === 'KeyD' || e.code === 'ArrowRight') && dx === 0) { dx = grid; dy = 0; }
+                if ((e.code === 'KeyW' || e.code === 'ArrowUp') && dy === 0) { dy = -grid; dx = 0; }
+                if ((e.code === 'KeyS' || e.code === 'ArrowDown') && dy === 0) { dy = grid; dx = 0; }
+            };
+
+            function spawnFood() {
+                food.x = Math.floor(Math.random() * (canvas.width / grid)) * grid;
+                food.y = Math.floor(Math.random() * (canvas.height / grid)) * grid;
             }
+            spawnFood();
 
-            tick() {
-                if (!this.running) return;
+            function update() {
+                const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
-                const head = { x: this.snake[0].x + this.dx, y: this.snake[0].y + this.dy };
-
-                // Wall collision with visible boundaries (Playable area 1 to tileCount-2)
-                if (head.x < 1 || head.x >= this.tileCount - 1 || head.y < 1 || head.y >= this.tileCount - 1) {
-                    this.gameOver();
+                if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                    playSound('hit');
+                    clearInterval(gameInterval);
+                    returnToHub();
                     return;
                 }
 
-                // Self collision
-                for (let part of this.snake) {
-                    if (head.x === part.x && head.y === part.y) {
-                        this.gameOver();
+                for(let i=0; i<snake.length; i++) {
+                    if (head.x === snake[i].x && head.y === snake[i].y) {
+                        playSound('hit');
+                        clearInterval(gameInterval);
+                        returnToHub();
                         return;
                     }
                 }
 
-                this.snake.unshift(head);
+                snake.unshift(head);
 
-                // Eat food
-                if (head.x === this.food.x && head.y === this.food.y) {
-                    this.score += 10;
-                    document.getElementById('currentScoreVal').innerText = this.score;
-                    soundEngine.playEat();
-                    this.spawnFood();
+                if (head.x === food.x && head.y === food.y) {
+                    score += 10;
+                    playSound('beep');
+                    spawnFood();
+                    credits += 5;
+                    updateCreditsUI();
                 } else {
-                    this.snake.pop();
+                    snake.pop();
                 }
 
-                this.draw();
+                document.getElementById('game-score-hud').innerText = `SCORE: ${score}`;
+
+                ctx.fillStyle = '#030008';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = '#ff0055';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(food.x, food.y, grid - 2, grid - 2);
+
+                snake.forEach((part, idx) => {
+                    ctx.fillStyle = idx === 0 ? '#00f3ff' : '#00a2ff';
+                    ctx.fillRect(part.x, part.y, grid - 2, grid - 2);
+                });
             }
 
-            draw() {
-                // Background
-                this.ctx.fillStyle = '#0a0915';
-                this.ctx.fillRect(0, 0, this.width, this.height);
-
-                // Draw glowing neon arena boundaries
-                this.ctx.strokeStyle = '#00f0ff';
-                this.ctx.lineWidth = 4;
-                this.ctx.shadowColor = '#00f0ff';
-                this.ctx.shadowBlur = 12;
-                this.ctx.strokeRect(this.gridSize, this.gridSize, this.width - (this.gridSize * 2), this.height - (this.gridSize * 2));
-                this.ctx.shadowBlur = 0;
-
-                // Draw Food (Pink glow)
-                this.ctx.fillStyle = '#ff007f';
-                this.ctx.shadowColor = '#ff007f';
-                this.ctx.shadowBlur = 10;
-                this.ctx.fillRect(this.food.x * this.gridSize + 2, this.food.y * this.gridSize + 2, this.gridSize - 4, this.gridSize - 4);
-
-                // Draw Snake (Cyan glow)
-                this.ctx.fillStyle = '#00f0ff';
-                this.ctx.shadowColor = '#00f0ff';
-                this.ctx.shadowBlur = 10;
-                for (let i = 0; i < this.snake.length; i++) {
-                    const part = this.snake[i];
-                    this.ctx.fillRect(part.x * this.gridSize + 1, part.y * this.gridSize + 1, this.gridSize - 2, this.gridSize - 2);
-                }
-
-                this.ctx.shadowBlur = 0;
-            }
-
-            gameOver() {
-                this.running = false;
-                if (this.gameInterval) clearInterval(this.gameInterval);
-                soundEngine.playGameOver();
-                app.saveHighScore('snake', this.score);
-
-                document.getElementById('overlayTitle').innerText = 'GAME OVER';
-                document.getElementById('overlaySubtitle').innerText = `Final Score: ${this.score}`;
-                document.getElementById('gameOverlay').classList.remove('hidden');
-            }
-
-            stop() {
-                this.running = false;
-                if (this.gameInterval) clearInterval(this.gameInterval);
-            }
+            gameInterval = setInterval(update, 100);
+            currentGameInterval = gameInterval;
         }
 
-        const snakeGame = new SnakeGame();
-    </script>
+        function startBreakerGame() {
+            initAudio();
+            hideAllScreens();
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('game-title-hud').innerText = "BREAKOUT 3000";
 
-    <!-- Block Breaker Game Engine -->
-    <script>
-        class BlockBreakerGame {
-            constructor() {
-                this.canvas = document.getElementById('gameCanvas');
-                this.ctx = this.canvas.getContext('2d');
-                this.width = 600;
-                this.height = 600;
-                this.canvas.width = this.width;
-                this.canvas.height = this.height;
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 800; canvas.height = 600;
 
-                this.paddle = { x: this.width / 2 - 50, y: this.height - 35, width: 100, height: 14, dx: 0 };
-                this.ball = { x: this.width / 2, y: this.height - 50, radius: 8, vx: 4, vy: -4, speed: 5 };
-                this.bricks = [];
-                this.brickRowCount = 5;
-                this.brickColumnCount = 8;
-                this.score = 0;
-                this.running = false;
-                this.animFrame = null;
+            let paddleX = canvas.width / 2 - 50, paddleWidth = 100, paddleHeight = 15;
+            let ballX = canvas.width / 2, ballY = 300, ballVX = 4, ballVY = -4;
+            let score = 0;
 
-                this.bindControls();
-            }
-
-            start() {
-                this.paddle.x = this.width / 2 - 50;
-                this.paddle.dx = 0;
-                this.score = 0;
-                document.getElementById('currentScoreVal').innerText = this.score;
-                this.initBricks();
-                this.resetBall();
-                this.running = true;
-                this.loop();
-            }
-
-            initBricks() {
-                this.bricks = [];
-                const brickWidth = 62;
-                const brickHeight = 20;
-                const padding = 10;
-                const offsetLeft = 32;
-                const offsetTop = 50;
-
-                for (let c = 0; c < this.brickColumnCount; c++) {
-                    this.bricks[c] = [];
-                    for (let r = 0; r < this.brickRowCount; r++) {
-                        const brickX = c * (brickWidth + padding) + offsetLeft;
-                        const brickY = r * (brickHeight + padding) + offsetTop;
-                        const colors = ['#ff007f', '#00f0ff', '#ffe600', '#9d00ff', '#00ff66'];
-                        this.bricks[c][r] = { x: brickX, y: brickY, status: 1, color: colors[r] };
-                    }
+            let bricks = [];
+            for(let c=0; c<8; c++) {
+                for(let r=0; r<4; r++) {
+                    bricks.push({x: c * 95 + 40, y: r * 30 + 50, w: 85, h: 20, active: true});
                 }
             }
 
-            resetBall() {
-                this.ball.x = this.width / 2;
-                this.ball.y = this.height - 60;
-                const angle = (Math.random() * Math.PI / 3) - (Math.PI / 6);
-                this.ball.vx = 5 * Math.sin(angle);
-                this.ball.vy = -5 * Math.cos(angle);
-            }
+            let keys = {};
+            window.onkeydown = (e) => keys[e.code] = true;
+            window.onkeyup = (e) => keys[e.code] = false;
 
-            bindControls() {
-                window.addEventListener('keydown', (e) => {
-                    if (app.activeGame !== this || !this.running) return;
-                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.paddle.dx = -9;
-                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.paddle.dx = 9;
-                });
+            function loop() {
+                if (keys['KeyA'] || keys['ArrowLeft']) paddleX -= 8;
+                if (keys['KeyD'] || keys['ArrowRight']) paddleX += 8;
+                paddleX = Math.max(0, Math.min(canvas.width - paddleWidth, paddleX));
 
-                window.addEventListener('keyup', (e) => {
-                    if (app.activeGame !== this || !this.running) return;
-                    if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && this.paddle.dx < 0) this.paddle.dx = 0;
-                    if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && this.paddle.dx > 0) this.paddle.dx = 0;
-                });
+                ballX += ballVX;
+                ballY += ballVY;
 
-                this.canvas.addEventListener('mousemove', (e) => {
-                    if (app.activeGame !== this || !this.running) return;
-                    const rect = this.canvas.getBoundingClientRect();
-                    const scaleX = this.width / rect.width;
-                    const mouseX = (e.clientX - rect.left) * scaleX;
-                    this.paddle.x = mouseX - this.paddle.width / 2;
-                });
+                if (ballX <= 0 || ballX >= canvas.width) { ballVX *= -1; playSound('beep'); }
+                if (ballY <= 0) { ballVY *= -1; playSound('beep'); }
 
-                this.canvas.addEventListener('touchmove', (e) => {
-                    if (app.activeGame !== this || !this.running) return;
-                    const rect = this.canvas.getBoundingClientRect();
-                    const scaleX = this.width / rect.width;
-                    const touchX = (e.touches[0].clientX - rect.left) * scaleX;
-                    this.paddle.x = touchX - this.paddle.width / 2;
-                }, { passive: true });
-            }
-
-            update() {
-                if (!this.running) return;
-
-                // Move paddle
-                this.paddle.x += this.paddle.dx;
-                this.paddle.x = Math.max(0, Math.min(this.width - this.paddle.width, this.paddle.x));
-
-                // Move ball
-                this.ball.x += this.ball.vx;
-                this.ball.y += this.ball.vy;
-
-                // Wall collisions
-                if (this.ball.x - this.ball.radius <= 0 || this.ball.x + this.ball.radius >= this.width) {
-                    this.ball.vx *= -1;
-                    soundEngine.playWallHit();
-                }
-                if (this.ball.y - this.ball.radius <= 0) {
-                    this.ball.vy *= -1;
-                    soundEngine.playWallHit();
+                if (ballY >= canvas.height - 35 && ballX >= paddleX && ballX <= paddleX + paddleWidth) {
+                    ballVY *= -1;
+                    playSound('hit');
                 }
 
-                // Paddle collision
-                if (this.ball.y + this.ball.radius >= this.paddle.y &&
-                    this.ball.y - this.ball.radius <= this.paddle.y + this.paddle.height &&
-                    this.ball.x >= this.paddle.x && this.ball.x <= this.paddle.x + this.paddle.width) {
-                    this.ball.vy *= -1;
-                    soundEngine.playPaddleHit();
-                    const hitPoint = this.ball.x - (this.paddle.x + this.paddle.width / 2);
-                    this.ball.vx = hitPoint * 0.15;
-                }
-
-                // Bottom floor collision (Game over)
-                if (this.ball.y - this.ball.radius >= this.height) {
-                    this.gameOver();
+                if (ballY > canvas.height) {
+                    playSound('hit');
+                    returnToHub();
                     return;
                 }
 
-                // Brick collisions
-                let remainingBricks = 0;
-                const brickWidth = 62;
-                const brickHeight = 20;
-                for (let c = 0; c < this.brickColumnCount; c++) {
-                    for (let r = 0; r < this.brickRowCount; r++) {
-                        const b = this.bricks[c][r];
-                        if (b.status === 1) {
-                            remainingBricks++;
-                            if (this.ball.x > b.x && this.ball.x < b.x + brickWidth &&
-                                this.ball.y > b.y && this.ball.y < b.y + brickHeight) {
-                                this.ball.vy *= -1;
-                                b.status = 0;
-                                this.score += 20;
-                                document.getElementById('currentScoreVal').innerText = this.score;
-                                soundEngine.playBrickBreak();
-                            }
-                        }
+                bricks.forEach(b => {
+                    if (b.active && ballX >= b.x && ballX <= b.x + b.w && ballY >= b.y && b.y + b.h) {
+                        b.active = false;
+                        ballVY *= -1;
+                        score += 20;
+                        playSound('beep');
+                        credits += 2;
+                        updateCreditsUI();
                     }
-                }
+                });
 
-                if (remainingBricks === 0) {
-                    this.running = false;
-                    soundEngine.playScore();
-                    app.saveHighScore('breaker', this.score);
-                    document.getElementById('overlayTitle').innerText = 'VICTORY!';
-                    document.getElementById('overlaySubtitle').innerText = `Final Score: ${this.score}`;
-                    document.getElementById('gameOverlay').classList.remove('hidden');
-                }
-            }
+                document.getElementById('game-score-hud').innerText = `SCORE: ${score}`;
 
-            draw() {
-                this.ctx.fillStyle = '#0a0915';
-                this.ctx.fillRect(0, 0, this.width, this.height);
+                ctx.fillStyle = '#030008';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Draw bricks
-                const brickWidth = 62;
-                const brickHeight = 20;
-                for (let c = 0; c < this.brickColumnCount; c++) {
-                    for (let r = 0; r < this.brickRowCount; r++) {
-                        const b = this.bricks[c][r];
-                        if (b.status === 1) {
-                            this.ctx.fillStyle = b.color;
-                            this.ctx.shadowColor = b.color;
-                            this.ctx.shadowBlur = 8;
-                            this.ctx.fillRect(b.x, b.y, brickWidth, brickHeight);
-                        }
+                ctx.fillStyle = '#ff0055';
+                ctx.fillRect(paddleX, canvas.height - 25, paddleWidth, paddleHeight);
+
+                ctx.fillStyle = '#00f3ff';
+                ctx.beginPath(); ctx.arc(ballX, ballY, 8, 0, Math.PI * 2); ctx.fill();
+
+                bricks.forEach(b => {
+                    if (b.active) {
+                        ctx.fillStyle = '#ffd700';
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
                     }
-                }
+                });
 
-                // Draw Paddle (Cyan)
-                this.ctx.fillStyle = '#00f0ff';
-                this.ctx.shadowColor = '#00f0ff';
-                this.ctx.shadowBlur = 12;
-                this.ctx.fillRect(this.paddle.x, this.paddle.y, this.paddle.width, this.paddle.height);
-
-                // Draw Ball (Yellow)
-                this.ctx.fillStyle = '#ffe600';
-                this.ctx.shadowColor = '#ffe600';
-                this.ctx.shadowBlur = 12;
-                this.ctx.beginPath();
-                this.ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
-                this.ctx.fill();
-
-                this.ctx.shadowBlur = 0;
+                currentGameInterval = requestAnimationFrame(loop);
             }
-
-            loop() {
-                if (!this.running) return;
-                this.update();
-                this.draw();
-                this.animFrame = requestAnimationFrame(() => this.loop());
-            }
-
-            gameOver() {
-                this.running = false;
-                soundEngine.playGameOver();
-                app.saveHighScore('breaker', this.score);
-
-                document.getElementById('overlayTitle').innerText = 'GAME OVER';
-                document.getElementById('overlaySubtitle').innerText = `Final Score: ${this.score}`;
-                document.getElementById('gameOverlay').classList.remove('hidden');
-            }
-
-            stop() {
-                this.running = false;
-                if (this.animFrame) cancelAnimationFrame(this.animFrame);
-            }
+            loop();
         }
-
-        const breakerGame = new BlockBreakerGame();
     </script>
+
 </body>
 </html>
