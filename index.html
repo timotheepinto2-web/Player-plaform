@@ -89,6 +89,8 @@
             .mobile-mode #gameCanvas { max-height: calc(100dvh - 150px) !important; }
         }
 
+        @keyframes c4drop { from { transform: translateY(var(--drop, -300%)); } to { transform: none; } }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -197,6 +199,57 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Connect 4 Card -->
+                <div class="bg-arcade-card border-2 border-arcade-neonPurple rounded-xl p-6 shadow-[0_0_15px_rgba(157,0,255,0.35)] flex flex-col justify-between transition transform hover:-translate-y-1">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-2.5 py-1 bg-arcade-neonPurple/20 text-arcade-neonPurple text-xs font-pixel rounded">ONLINE · AI · LOCAL</span>
+                            <i class="fa-solid fa-circle-dot text-3xl text-arcade-neonPurple"></i>
+                        </div>
+                        <h3 class="text-2xl font-pixel text-white mb-2">CONNECT 4</h3>
+                        <p class="text-gray-300 text-sm mb-4">Drop your discs and line up four in a row before your opponent does. Host a room, scan the QR code, or beat the AI.</p>
+                    </div>
+                    <div>
+                        <button onclick="boardGame.openLobby('connect4')" class="w-full py-3 bg-arcade-neonPurple text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-purple-500/30">
+                            PLAY CONNECT 4
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tic-Tac-Toe Card -->
+                <div class="bg-arcade-card border-2 border-[#00ff66] rounded-xl p-6 shadow-[0_0_15px_rgba(0,255,102,0.3)] flex flex-col justify-between transition transform hover:-translate-y-1">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-2.5 py-1 bg-[#00ff66]/20 text-[#00ff66] text-xs font-pixel rounded">ONLINE · AI · LOCAL</span>
+                            <i class="fa-solid fa-hashtag text-3xl text-[#00ff66]"></i>
+                        </div>
+                        <h3 class="text-2xl font-pixel text-white mb-2">TIC-TAC-TOE</h3>
+                        <p class="text-gray-300 text-sm mb-4">The quick classic: X versus O on a 3x3 grid. Perfect for a fast duel between phone and PC.</p>
+                    </div>
+                    <div>
+                        <button onclick="boardGame.openLobby('tictactoe')" class="w-full py-3 bg-[#00ff66] text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-green-500/30">
+                            PLAY TIC-TAC-TOE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rock Paper Scissors Card -->
+                <div class="bg-arcade-card border-2 border-[#ff8c00] rounded-xl p-6 shadow-[0_0_15px_rgba(255,140,0,0.3)] flex flex-col justify-between transition transform hover:-translate-y-1">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-2.5 py-1 bg-[#ff8c00]/20 text-[#ff8c00] text-xs font-pixel rounded">ONLINE · AI · LOCAL</span>
+                            <i class="fa-solid fa-hand-scissors text-3xl text-[#ff8c00]"></i>
+                        </div>
+                        <h3 class="text-2xl font-pixel text-white mb-2">ROCK PAPER SCISSORS</h3>
+                        <p class="text-gray-300 text-sm mb-4">Both players pick in secret, then the choices are revealed at the same time. Keep a running score with your friend.</p>
+                    </div>
+                    <div>
+                        <button onclick="boardGame.openLobby('rps')" class="w-full py-3 bg-[#ff8c00] text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-orange-500/30">
+                            PLAY RPS
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -262,6 +315,84 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- VIEW 2B: GENERIC LOBBY (Connect 4 / Tic-Tac-Toe / Rock Paper Scissors) -->
+        <div id="onlineLobbyView" class="hidden w-full max-w-xl mx-auto space-y-6 bg-arcade-card border border-arcade-border p-6 sm:p-8 rounded-2xl neon-box-pink">
+            <div class="flex items-center justify-between border-b border-arcade-border pb-4">
+                <h2 id="olTitle" class="text-lg sm:text-2xl font-pixel text-arcade-neonPink">LOBBY</h2>
+                <button onclick="app.showMenu()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-arrow-left text-xl"></i></button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <button id="olModeAi" onclick="boardGame.setMode('ai')" class="p-3 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-[10px] sm:text-xs text-center transition">
+                    <i class="fa-solid fa-robot block text-2xl mb-2 text-arcade-neonCyan"></i>VS AI
+                </button>
+                <button id="olModeLocal" onclick="boardGame.setMode('local')" class="p-3 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-[10px] sm:text-xs text-center transition">
+                    <i class="fa-solid fa-user-group block text-2xl mb-2 text-arcade-neonYellow"></i>SAME DEVICE
+                </button>
+                <button id="olModeOnline" onclick="boardGame.setMode('online')" class="p-3 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-[10px] sm:text-xs text-center transition">
+                    <i class="fa-solid fa-globe block text-2xl mb-2 text-arcade-neonPink"></i>ONLINE
+                </button>
+            </div>
+
+            <div id="olAi" class="space-y-4">
+                <p class="text-sm text-gray-300">Play against the computer. You are Player 1.</p>
+                <button onclick="boardGame.startAI()" class="w-full py-3 bg-arcade-neonCyan text-black font-pixel font-bold rounded hover:bg-white transition">START VS AI</button>
+            </div>
+
+            <div id="olLocal" class="hidden space-y-4">
+                <p class="text-sm text-gray-300">Two players, one screen: take turns on the same phone, tablet or PC.</p>
+                <button onclick="boardGame.startLocal()" class="w-full py-3 bg-arcade-neonYellow text-black font-pixel font-bold rounded hover:bg-white transition">START 2 PLAYERS</button>
+            </div>
+
+            <div id="olOnline" class="hidden space-y-6">
+                <div class="p-4 bg-black/40 rounded-xl border border-arcade-border space-y-3">
+                    <h3 class="font-pixel text-arcade-neonPink text-sm">OPTION A: HOST A MATCH</h3>
+                    <p class="text-xs text-gray-400">Create a room and share the link, the QR code or the code with a friend (PC or phone).</p>
+                    <button onclick="boardGame.hostRoom()" class="w-full py-2.5 bg-arcade-neonPink text-black font-pixel text-xs font-bold rounded hover:bg-white transition">HOST NEW ROOM</button>
+                    <div id="olHostStatus" class="hidden space-y-2 pt-2">
+                        <p class="text-xs text-arcade-neonCyan font-mono break-all" id="olPeerId">Initializing room...</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="olShareInput" readonly class="w-full bg-arcade-dark border border-arcade-border rounded px-2 py-1 text-xs text-gray-300 font-mono">
+                            <button onclick="boardGame.copyLink()" class="px-3 bg-arcade-border hover:bg-arcade-neonCyan hover:text-black rounded text-xs font-pixel">COPY</button>
+                            <button id="olShareBtn" onclick="boardGame.shareLink()" class="hidden px-3 bg-arcade-border hover:bg-arcade-neonPink hover:text-black rounded text-xs font-pixel">SHARE</button>
+                        </div>
+                        <div id="olQrWrap" class="hidden">
+                            <div id="olQrBox" class="bg-white p-2 rounded w-fit mx-auto"></div>
+                            <p class="text-center text-xs text-gray-400 mt-1">Scan with your phone to join</p>
+                        </div>
+                        <p class="text-xs text-yellow-400 animate-pulse" id="olWaitMsg">Waiting for opponent to connect...</p>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-black/40 rounded-xl border border-arcade-border space-y-3">
+                    <h3 class="font-pixel text-arcade-neonCyan text-sm">OPTION B: JOIN A MATCH</h3>
+                    <p class="text-xs text-gray-400">Enter the room code (or paste the full link) provided by your friend.</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="olJoinInput" placeholder="Enter Room Code..." class="w-full bg-arcade-dark border border-arcade-border rounded px-3 py-2 text-sm text-white font-mono focus:border-arcade-neonCyan outline-none">
+                        <button onclick="boardGame.joinRoom()" class="px-4 bg-arcade-neonCyan text-black font-pixel text-xs font-bold rounded hover:bg-white transition">JOIN</button>
+                    </div>
+                    <p class="text-xs text-red-400 hidden" id="olJoinErr"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2C: BOARD GAME CONTAINER -->
+        <div id="boardGameView" class="hidden w-full max-w-lg mx-auto flex flex-col items-center space-y-4">
+            <div class="w-full flex justify-between items-center bg-arcade-card border border-arcade-border px-4 py-3 rounded-xl gap-2">
+                <div class="flex items-center space-x-3">
+                    <button onclick="boardGame.backToLobby()" class="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-black rounded text-xs font-pixel transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> QUIT
+                    </button>
+                    <span id="bgTitle" class="font-pixel text-[10px] sm:text-sm text-arcade-neonCyan"></span>
+                </div>
+                <div id="bgScore" class="font-pixel text-[10px] sm:text-xs text-arcade-neonYellow text-right"></div>
+            </div>
+            <div id="bgYou" class="font-pixel text-[10px] text-center"></div>
+            <div id="bgStatus" class="font-pixel text-xs sm:text-sm text-center min-h-[1.5rem]"></div>
+            <div id="bgBoard" class="w-full"></div>
+            <button id="bgRematch" onclick="boardGame.rematch()" class="hidden px-6 py-3 bg-arcade-neonCyan text-black font-pixel text-sm font-bold rounded hover:bg-white transition shadow-lg">PLAY AGAIN</button>
         </div>
 
         <!-- VIEW 3: ACTIVE GAMEPLAY CONTAINER -->
@@ -564,6 +695,8 @@
                 }
                 this.activeGame = null;
                 this.hideOverlay();
+                document.getElementById('onlineLobbyView').classList.add('hidden');
+                document.getElementById('boardGameView').classList.add('hidden');
                 document.getElementById('hubView').classList.remove('hidden');
                 document.getElementById('pongLobbyView').classList.add('hidden');
                 document.getElementById('gameplayView').classList.add('hidden');
@@ -1686,11 +1819,739 @@
     </script>
 
     <script>
+        /* ===== Jeux de plateau : Puissance 4, Morpion, Pierre-Feuille-Ciseaux ===== */
+        const COL = { 1: '#00f0ff', 2: '#ff007f', win: '#ffe600' };
+        const TTT_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        const rand = (n) => Math.floor(Math.random() * n);
+
+        function mk(tag, cls, text) {
+            const e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text !== undefined) e.textContent = text;
+            return e;
+        }
+
+        // Session réseau réutilisable (PeerJS) : héberger ou rejoindre une room
+        class NetSession {
+            constructor(handlers) {
+                this.h = handlers;
+                this.peer = null;
+                this.conn = null;
+                this.timer = null;
+            }
+
+            host(gameId) {
+                this.destroy();
+                const id = `arcade-${gameId}-` + Math.floor(Math.random() * 90000 + 10000);
+                const peer = new Peer(id);
+                this.peer = peer;
+                peer.on('open', (pid) => this.h.onRoom && this.h.onRoom(pid));
+                peer.on('connection', (c) => {
+                    if (this.conn && this.conn.open) { c.on('open', () => c.close()); return; }
+                    this.attach(c);
+                });
+                peer.on('error', (err) => {
+                    if (err.type === 'unavailable-id') { this.host(gameId); return; }
+                    this.h.onError && this.h.onError('Error creating room. Try again.');
+                });
+            }
+
+            join(code) {
+                this.destroy();
+                const peer = new Peer();
+                this.peer = peer;
+                peer.on('open', () => {
+                    this.attach(peer.connect(code, { reliable: true }));
+                    this.timer = setTimeout(() => {
+                        if (this.conn && !this.conn.open) {
+                            this.h.onError && this.h.onError('Connection timed out. Check the room code.');
+                            this.destroy();
+                        }
+                    }, 10000);
+                });
+                peer.on('error', () => this.h.onError && this.h.onError('Could not connect to room. Check code.'));
+            }
+
+            attach(c) {
+                this.conn = c;
+                const open = () => { clearTimeout(this.timer); this.h.onConnected && this.h.onConnected(); };
+                if (c.open) open(); else c.on('open', open);
+                c.on('data', (d) => this.h.onData && this.h.onData(d));
+                c.on('close', () => {
+                    if (this.conn === c) { this.conn = null; this.h.onClose && this.h.onClose(); }
+                });
+                c.on('error', (e) => console.error('Connection error', e));
+            }
+
+            send(o) { if (this.conn && this.conn.open) this.conn.send(o); }
+
+            destroy() {
+                clearTimeout(this.timer);
+                if (this.conn) { const c = this.conn; this.conn = null; try { c.close(); } catch (e) {} }
+                if (this.peer) { try { this.peer.destroy(); } catch (e) {} this.peer = null; }
+            }
+        }
+
+        // ---------- Puissance 4 : détection de victoire ----------
+        function c4Winner(board) {
+            const dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const v = board[r][c];
+                    if (!v) continue;
+                    for (const [dr, dc] of dirs) {
+                        const cells = [[r, c]];
+                        for (let k = 1; k < 4; k++) {
+                            const rr = r + dr * k, cc = c + dc * k;
+                            if (rr < 0 || rr > 5 || cc < 0 || cc > 6 || board[rr][cc] !== v) break;
+                            cells.push([rr, cc]);
+                        }
+                        if (cells.length === 4) return { winner: v, cells };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Chaque jeu fournit : newState, movers (qui peut jouer), apply (mutation), result, ai, view, render
+        const BOARD_GAMES = {
+            tictactoe: {
+                title: 'TIC-TAC-TOE',
+                newState: (starter) => ({ board: Array(9).fill(0), turn: starter }),
+                movers: (s) => [s.turn],
+                apply(s, mv, p) {
+                    if (!Number.isInteger(mv) || mv < 0 || mv > 8) return false;
+                    if (p !== s.turn || s.board[mv] !== 0) return false;
+                    s.board[mv] = p;
+                    s.turn = 3 - p;
+                    return true;
+                },
+                result(s) {
+                    for (const [a, b, c] of TTT_LINES) {
+                        const v = s.board[a];
+                        if (v && v === s.board[b] && v === s.board[c]) return { winner: v, cells: [a, b, c] };
+                    }
+                    return s.board.every(x => x) ? { winner: 0 } : null;
+                },
+                ai(s) {
+                    const free = [];
+                    s.board.forEach((v, i) => { if (!v) free.push(i); });
+                    if (Math.random() < 0.15) return free[rand(free.length)]; // petite erreur : l'IA reste battable
+                    const canWin = (p) => free.find(i => {
+                        s.board[i] = p;
+                        const w = TTT_LINES.some(([a, b, c]) => s.board[a] === p && s.board[b] === p && s.board[c] === p);
+                        s.board[i] = 0;
+                        return w;
+                    });
+                    let m = canWin(2);
+                    if (m === undefined) m = canWin(1);
+                    if (m === undefined) {
+                        if (free.includes(4)) m = 4;
+                        else {
+                            const corners = [0, 2, 6, 8].filter(i => free.includes(i));
+                            m = corners.length ? corners[rand(corners.length)] : free[rand(free.length)];
+                        }
+                    }
+                    return m;
+                },
+                view: (s) => s,
+                render(ctrl, el, s, res, me) {
+                    el.innerHTML = '';
+                    const canPlay = ctrl.canMove(me);
+                    const grid = mk('div', 'grid grid-cols-3 gap-3 w-full max-w-sm mx-auto');
+                    s.board.forEach((v, i) => {
+                        const b = mk('button', 'aspect-square rounded-xl border-2 font-pixel text-5xl sm:text-6xl flex items-center justify-center transition');
+                        b.type = 'button';
+                        b.style.background = '#131127';
+                        b.style.borderColor = '#2a2650';
+                        if (v) {
+                            b.textContent = v === 1 ? 'X' : 'O';
+                            b.style.color = COL[v];
+                            b.style.textShadow = `0 0 14px ${COL[v]}`;
+                        }
+                        if (res && res.cells && res.cells.includes(i)) {
+                            b.style.borderColor = COL.win;
+                            b.style.boxShadow = `0 0 16px ${COL.win}`;
+                        }
+                        b.disabled = !canPlay || v !== 0;
+                        if (canPlay && v === 0) b.classList.add('hover:bg-white/10', 'cursor-pointer');
+                        b.addEventListener('click', () => ctrl.play(i));
+                        grid.appendChild(b);
+                    });
+                    el.appendChild(grid);
+                }
+            },
+
+            connect4: {
+                title: 'CONNECT 4',
+                newState: (starter) => ({
+                    board: Array.from({ length: 6 }, () => Array(7).fill(0)),
+                    turn: starter,
+                    last: null
+                }),
+                movers: (s) => [s.turn],
+                apply(s, col, p) {
+                    if (!Number.isInteger(col) || col < 0 || col > 6) return false;
+                    if (p !== s.turn || s.board[0][col] !== 0) return false;
+                    for (let r = 5; r >= 0; r--) {
+                        if (s.board[r][col] === 0) {
+                            s.board[r][col] = p;
+                            s.last = { r, c: col };
+                            break;
+                        }
+                    }
+                    s.turn = 3 - p;
+                    return true;
+                },
+                result(s) {
+                    const w = c4Winner(s.board);
+                    if (w) return w;
+                    return s.board[0].every(x => x) ? { winner: 0 } : null;
+                },
+                ai(s) {
+                    const clone = (b) => b.map(row => row.slice());
+                    const drop = (b, col, p) => {
+                        for (let r = 5; r >= 0; r--) if (b[r][col] === 0) { b[r][col] = p; return; }
+                    };
+                    const valid = [0, 1, 2, 3, 4, 5, 6].filter(c => s.board[0][c] === 0);
+                    let best = valid[0], bestScore = -Infinity;
+                    for (const c of valid) {
+                        let score = 3 - Math.abs(c - 3); // préfère le centre
+                        const mine = clone(s.board);
+                        drop(mine, c, 2);
+                        if (c4Winner(mine)) {
+                            score += 1000; // coup gagnant
+                        } else {
+                            const theirs = clone(s.board);
+                            drop(theirs, c, 1);
+                            if (c4Winner(theirs)) score += 500; // bloque la victoire adverse
+                            if (mine[0][c] === 0) {
+                                const after = clone(mine);
+                                drop(after, c, 1);
+                                if (c4Winner(after)) score -= 300; // éviter d'offrir la victoire juste au-dessus
+                            }
+                        }
+                        score += Math.random() * 2;
+                        if (score > bestScore) { bestScore = score; best = c; }
+                    }
+                    return best;
+                },
+                view: (s) => s,
+                render(ctrl, el, s, res, me) {
+                    el.innerHTML = '';
+                    const canPlay = ctrl.canMove(me);
+                    const wrap = mk('div', 'mx-auto w-full max-w-md p-2 sm:p-3 rounded-2xl border-2');
+                    wrap.style.background = '#131127';
+                    wrap.style.borderColor = COL[1];
+                    wrap.style.boxShadow = '0 0 15px rgba(0,240,255,0.35)';
+                    const grid = mk('div', 'grid gap-1.5 sm:gap-2');
+                    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+                    const winCells = res && res.cells ? res.cells.map(([r, c]) => r + ',' + c) : [];
+                    for (let r = 0; r < 6; r++) {
+                        for (let c = 0; c < 7; c++) {
+                            const v = s.board[r][c];
+                            const cell = mk('button', 'aspect-square rounded-full border-2 transition');
+                            cell.type = 'button';
+                            cell.style.background = v ? COL[v] : '#0a0915';
+                            cell.style.borderColor = '#2a2650';
+                            if (v) cell.style.boxShadow = `0 0 10px ${COL[v]}`;
+                            if (winCells.includes(r + ',' + c)) {
+                                cell.style.borderColor = COL.win;
+                                cell.style.boxShadow = `0 0 16px ${COL.win}`;
+                            }
+                            if (s.last && s.last.r === r && s.last.c === c) {
+                                cell.style.setProperty('--drop', `-${(r + 1) * 105}%`);
+                                cell.style.animation = 'c4drop 0.35s ease-out';
+                            }
+                            cell.disabled = !canPlay || s.board[0][c] !== 0;
+                            if (canPlay && s.board[0][c] === 0) cell.classList.add('cursor-pointer');
+                            cell.addEventListener('click', () => ctrl.play(c));
+                            grid.appendChild(cell);
+                        }
+                    }
+                    wrap.appendChild(grid);
+                    el.appendChild(wrap);
+                }
+            },
+
+            rps: {
+                title: 'ROCK PAPER SCISSORS',
+                newState: () => ({ picks: { 1: null, 2: null } }),
+                movers(s) {
+                    if (s.picks[1] && s.picks[2]) return [];
+                    return [1, 2].filter(p => !s.picks[p]);
+                },
+                apply(s, mv, p) {
+                    if (s.picks[p] || !['R', 'P', 'S'].includes(mv)) return false;
+                    s.picks[p] = mv;
+                    return true;
+                },
+                result(s) {
+                    const a = s.picks[1], b = s.picks[2];
+                    if (!a || !b || a === 'hidden' || b === 'hidden') return null;
+                    if (a === b) return { winner: 0 };
+                    const beats = { R: 'S', S: 'P', P: 'R' };
+                    return { winner: beats[a] === b ? 1 : 2 };
+                },
+                ai: () => ['R', 'P', 'S'][rand(3)],
+                // Les choix restent cachés tant que les deux joueurs n'ont pas joué
+                view(s) {
+                    if (this.result(s)) return s;
+                    return { picks: { 1: s.picks[1] ? 'hidden' : null, 2: s.picks[2] ? 'hidden' : null } };
+                },
+                render(ctrl, el, s, res, me) {
+                    el.innerHTML = '';
+                    if (ctrl.localPickRound !== ctrl.round) ctrl.localPick = null;
+                    const icons = { R: 'fa-hand-fist', P: 'fa-hand', S: 'fa-hand-scissors' };
+                    const names = { R: 'ROCK', P: 'PAPER', S: 'SCISSORS' };
+                    const isPick = (v) => v === 'R' || v === 'P' || v === 'S';
+
+                    const shown = (p) => {
+                        if (res) return s.picks[p];
+                        if (ctrl.mode === 'local') return s.picks[p] ? 'hidden' : null;
+                        if (p === me) {
+                            const v = s.picks[p];
+                            return isPick(v) ? v : (ctrl.localPick || (v ? 'hidden' : null));
+                        }
+                        return s.picks[p] ? 'hidden' : null;
+                    };
+
+                    const panel = (p) => {
+                        const v = shown(p);
+                        const box = mk('div', 'flex-1 rounded-2xl border-2 p-3 sm:p-4 text-center space-y-2');
+                        box.style.background = '#131127';
+                        box.style.borderColor = (res && res.winner === p) ? COL.win : '#2a2650';
+                        const label = mk('div', 'font-pixel text-[10px]', ctrl.nameOf(p));
+                        label.style.color = COL[p];
+                        box.appendChild(label);
+                        const ic = mk('i', 'fa-solid text-5xl sm:text-6xl py-3 block');
+                        if (isPick(v)) { ic.classList.add(icons[v]); ic.style.color = COL[p]; }
+                        else if (v === 'hidden') { ic.classList.add('fa-lock'); ic.style.color = '#9ca3af'; }
+                        else { ic.classList.add('fa-question'); ic.style.color = '#2a2650'; }
+                        if (p === 2) ic.style.transform = 'scaleX(-1)';
+                        box.appendChild(ic);
+                        box.appendChild(mk('div', 'text-xs text-gray-300 font-mono', isPick(v) ? names[v] : (v === 'hidden' ? 'READY' : '...')));
+                        return box;
+                    };
+
+                    const wrap = mk('div', 'w-full max-w-md mx-auto space-y-6');
+                    const row = mk('div', 'flex items-stretch gap-2 sm:gap-3');
+                    row.appendChild(panel(1));
+                    row.appendChild(mk('div', 'self-center font-pixel text-xs text-gray-500', 'VS'));
+                    row.appendChild(panel(2));
+                    wrap.appendChild(row);
+
+                    const guestWaiting = ctrl.mode === 'online' && ctrl.role === 'guest' && ctrl.localPick;
+                    const canPick = ctrl.canMove(me) && !guestWaiting;
+                    const btns = mk('div', 'grid grid-cols-3 gap-3');
+                    ['R', 'P', 'S'].forEach((k) => {
+                        const b = mk('button', 'py-4 rounded-xl border-2 font-pixel text-[10px] transition flex flex-col items-center gap-2');
+                        b.type = 'button';
+                        b.style.borderColor = COL[me] || COL[1];
+                        b.style.color = COL[me] || COL[1];
+                        b.style.background = '#131127';
+                        const i = mk('i', 'fa-solid text-3xl ' + icons[k]);
+                        b.appendChild(i);
+                        b.appendChild(mk('span', '', names[k]));
+                        b.disabled = !canPick;
+                        if (!canPick) b.classList.add('opacity-40');
+                        else b.classList.add('hover:bg-white/10', 'cursor-pointer');
+                        b.addEventListener('click', () => ctrl.play(k));
+                        btns.appendChild(b);
+                    });
+                    wrap.appendChild(btns);
+                    el.appendChild(wrap);
+                }
+            }
+        };
+
+        // Contrôleur commun : lobby, réseau, tours, score, IA, revanche.
+        // L'hôte (joueur 1) fait autorité ; l'invité (joueur 2) envoie ses coups et reçoit l'état.
+        class BoardController {
+            constructor() {
+                this.gameId = null;
+                this.def = null;
+                this.mode = 'ai';      // 'ai' | 'local' | 'online'
+                this.role = 'host';    // 'host' | 'guest'
+                this.net = null;
+                this.state = null;
+                this.result = null;
+                this.scores = { 0: 0, 1: 0, 2: 0 };
+                this.round = 0;
+                this.localPick = null;
+                this.localPickRound = -1;
+                this.left = false;
+                this.aiTimer = null;
+            }
+
+            $(id) { return document.getElementById(id); }
+
+            showView(which) {
+                ['hubView', 'pongLobbyView', 'gameplayView', 'onlineLobbyView', 'boardGameView']
+                    .forEach(id => this.$(id).classList.toggle('hidden', id !== which));
+            }
+
+            // ----- Lobby -----
+            openLobby(gameId) {
+                this.stop();
+                this.gameId = gameId;
+                this.def = BOARD_GAMES[gameId];
+                app.activeGame = this;
+                app.hideOverlay();
+                this.showView('onlineLobbyView');
+                this.$('olTitle').textContent = this.def.title + ' LOBBY';
+                this.$('olHostStatus').classList.add('hidden');
+                this.$('olQrWrap').classList.add('hidden');
+                this.$('olJoinErr').classList.add('hidden');
+                this.setMode('ai');
+            }
+
+            setMode(m) {
+                const on = 'p-3 rounded-xl border-2 border-arcade-neonPink bg-arcade-neonPink/10 font-pixel text-[10px] sm:text-xs text-center transition';
+                const off = 'p-3 rounded-xl border-2 border-arcade-border bg-black/40 font-pixel text-[10px] sm:text-xs text-center transition';
+                [['ai', 'olModeAi', 'olAi'], ['local', 'olModeLocal', 'olLocal'], ['online', 'olModeOnline', 'olOnline']].forEach(([k, b, p]) => {
+                    this.$(b).className = (k === m) ? on : off;
+                    this.$(p).classList.toggle('hidden', k !== m);
+                });
+            }
+
+            startAI() { this.disconnect(); this.mode = 'ai'; this.role = 'host'; this.beginMatch(); }
+            startLocal() { this.disconnect(); this.mode = 'local'; this.role = 'host'; this.beginMatch(); }
+
+            hostRoom() {
+                this.mode = 'online';
+                this.role = 'host';
+                this.disconnect();
+                this.$('olHostStatus').classList.remove('hidden');
+                this.$('olPeerId').textContent = 'Connecting to P2P relay...';
+                this.$('olWaitMsg').textContent = 'Waiting for opponent to connect...';
+                this.$('olQrWrap').classList.add('hidden');
+                this.net = new NetSession({
+                    onRoom: (id) => {
+                        this.$('olPeerId').textContent = `Room Code: ${id}`;
+                        if (window.location.protocol === 'file:') {
+                            // Un lien file:// ne marche que sur cet ordinateur : on partage le code
+                            this.$('olShareInput').value = id;
+                            this.$('olPeerId').textContent = `Room Code: ${id} (page opened locally: send the CODE, or host the page online to get a link)`;
+                        } else {
+                            const url = window.location.href.split('#')[0] + '#room=' + id;
+                            this.$('olShareInput').value = url;
+                            this.showQR(url);
+                        }
+                        app.showToast('Room Created', 'Share it with your friend!', 'fa-link', 'text-arcade-neonPink');
+                    },
+                    onConnected: () => {
+                        this.$('olWaitMsg').textContent = 'Opponent connected! Starting match...';
+                        setTimeout(() => {
+                            if (this.net && this.net.conn && this.net.conn.open) this.beginMatch();
+                        }, 600);
+                    },
+                    onData: (d) => this.onData(d),
+                    onClose: () => this.onPeerLeft(),
+                    onError: (m) => { this.$('olPeerId').textContent = m; }
+                });
+                this.net.host(this.gameId);
+            }
+
+            joinRoom() {
+                this.mode = 'online';
+                this.role = 'guest';
+                let code = this.$('olJoinInput').value.trim();
+                if (code.includes('room=')) code = code.split('room=')[1].split('&')[0];
+                const err = this.$('olJoinErr');
+                if (!code) {
+                    err.textContent = 'Please enter a valid room code.';
+                    err.classList.remove('hidden');
+                    return;
+                }
+                const m = code.match(/^arcade-([a-z0-9]+)-/);
+                if (m && m[1] !== this.gameId) {
+                    err.textContent = 'This room is for another game. Go back and pick the right game.';
+                    err.classList.remove('hidden');
+                    return;
+                }
+                err.classList.add('hidden');
+                this.disconnect();
+                this.net = new NetSession({
+                    onConnected: () => {
+                        app.showToast('Connected!', 'Joined the room!', 'fa-check', 'text-arcade-neonCyan');
+                        this.beginMatch();
+                        this.net.send({ type: 'hello' });
+                    },
+                    onData: (d) => this.onData(d),
+                    onClose: () => this.onPeerLeft(),
+                    onError: (msg) => { err.textContent = msg; err.classList.remove('hidden'); }
+                });
+                this.net.join(code);
+            }
+
+            showQR(url) {
+                const wrap = this.$('olQrWrap');
+                const box = this.$('olQrBox');
+                box.innerHTML = '';
+                if (typeof QRCode !== 'undefined') {
+                    try {
+                        new QRCode(box, { text: url, width: 150, height: 150, colorDark: '#000000', colorLight: '#ffffff' });
+                        wrap.classList.remove('hidden');
+                    } catch (e) { wrap.classList.add('hidden'); }
+                }
+                if (navigator.share) this.$('olShareBtn').classList.remove('hidden');
+            }
+
+            copyLink() {
+                const input = this.$('olShareInput');
+                input.select();
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(input.value).catch(() => document.execCommand('copy'));
+                } else {
+                    document.execCommand('copy');
+                }
+                app.showToast('Copied!', 'Copied to clipboard.', 'fa-clipboard', 'text-arcade-neonCyan');
+            }
+
+            shareLink() {
+                const url = this.$('olShareInput').value;
+                if (navigator.share) {
+                    navigator.share({ title: 'ArcadeVerse - ' + this.def.title, text: 'Join my match!', url }).catch(() => {});
+                } else {
+                    this.copyLink();
+                }
+            }
+
+            // ----- Partie -----
+            beginMatch() {
+                this.scores = { 0: 0, 1: 0, 2: 0 };
+                this.round = 0;
+                this.left = false;
+                this.state = null;
+                this.result = null;
+                this.localPick = null;
+                this.localPickRound = -1;
+                this.showView('boardGameView');
+                this.$('bgTitle').textContent = this.def.title;
+                if (this.mode === 'online' && this.role === 'guest') {
+                    this.render();   // attend l'état envoyé par l'hôte
+                    return;
+                }
+                this.newRound();
+            }
+
+            newRound() {
+                this.round++;
+                const starter = (this.round % 2 === 1) ? 1 : 2; // le départ alterne à chaque manche
+                this.state = this.def.newState(starter);
+                this.result = null;
+                this.localPick = null;
+                this.refresh();
+            }
+
+            me() {
+                if (this.mode === 'online') return this.role === 'host' ? 1 : 2;
+                if (this.mode === 'ai') return 1;
+                const mv = this.state ? this.def.movers(this.state) : [];
+                return mv[0] || 1;
+            }
+
+            nameOf(p) {
+                if (this.mode === 'local') return 'P' + p;
+                if (p === this.me()) return 'YOU';
+                return this.mode === 'ai' ? 'AI' : 'OPP';
+            }
+
+            canMove(me) {
+                return !!this.state && !this.result && !this.left && this.def.movers(this.state).includes(me);
+            }
+
+            // Appelé par l'interface quand le joueur local joue
+            play(move) {
+                if (!this.state || this.result || this.left) return;
+                if (this.mode === 'online' && this.role === 'guest') {
+                    if (!this.def.movers(this.state).includes(2)) return;
+                    if (this.gameId === 'rps') {
+                        if (this.localPick) return;
+                        this.localPick = move;
+                        this.localPickRound = this.round;
+                        this.render();
+                    }
+                    this.net.send({ type: 'move', move });
+                    return;
+                }
+                // IA, 2 joueurs sur le même écran, ou hôte en ligne : on applique directement
+                const player = this.mode === 'local' ? this.def.movers(this.state)[0] : 1;
+                if (!this.def.movers(this.state).includes(player)) return;
+                if (!this.def.apply(this.state, move, player)) return;
+                this.refresh();
+            }
+
+            // Autorité (hôte / IA / local) : calcule le résultat, met à jour l'écran, diffuse l'état
+            refresh() {
+                const res = this.def.result(this.state);
+                const justEnded = !!res && !this.result;
+                this.result = res;
+                if (justEnded) this.scores[res.winner]++;
+                this.render();
+                this.broadcast();
+                if (justEnded) this.playEnd(); else soundEngine.playPaddleHit();
+                if (!res && this.mode === 'ai' && this.def.movers(this.state).includes(2)) {
+                    clearTimeout(this.aiTimer);
+                    this.aiTimer = setTimeout(() => this.aiPlay(), 500);
+                }
+            }
+
+            aiPlay() {
+                if (this.mode !== 'ai' || !this.state || this.result) return;
+                if (!this.def.movers(this.state).includes(2)) return;
+                const mv = this.def.ai(this.state);
+                if (this.def.apply(this.state, mv, 2)) this.refresh();
+            }
+
+            broadcast() {
+                if (this.mode === 'online' && this.role === 'host' && this.net) {
+                    this.net.send({
+                        type: 'state',
+                        state: this.def.view(this.state),
+                        result: this.result,
+                        scores: this.scores,
+                        round: this.round
+                    });
+                }
+            }
+
+            onData(d) {
+                if (!d) return;
+                if (this.role === 'host') {
+                    if (d.type === 'move') {
+                        if (!this.state || this.result) return;
+                        if (!this.def.movers(this.state).includes(2)) return;
+                        if (this.def.apply(this.state, d.move, 2)) this.refresh();
+                    } else if (d.type === 'rematch') {
+                        if (this.result) this.newRound();
+                    } else if (d.type === 'hello') {
+                        if (this.state) this.broadcast();
+                    }
+                } else if (d.type === 'state') {
+                    const had = !!this.result;
+                    this.state = d.state;
+                    this.result = d.result;
+                    this.scores = d.scores;
+                    this.round = d.round;
+                    this.render();
+                    if (d.result && !had) this.playEnd(); else soundEngine.playPaddleHit();
+                }
+            }
+
+            onPeerLeft() {
+                if (!this.$('boardGameView').classList.contains('hidden')) {
+                    this.left = true;
+                    this.render();
+                } else {
+                    this.$('olWaitMsg').textContent = 'Opponent disconnected. Waiting for a new one...';
+                }
+            }
+
+            rematch() {
+                if (!this.result || this.left) return;
+                if (this.mode === 'online' && this.role === 'guest') {
+                    this.net.send({ type: 'rematch' });
+                    return;
+                }
+                this.newRound();
+            }
+
+            playEnd() {
+                const w = this.result.winner;
+                if (w === 0) soundEngine.playWallHit();
+                else if (this.mode === 'local' || w === this.me()) soundEngine.playScore();
+                else soundEngine.playGameOver();
+            }
+
+            turnText(me) {
+                const movers = this.def.movers(this.state);
+                const verb = this.gameId === 'rps' ? 'PICK YOUR MOVE' : 'YOUR TURN';
+                if (this.mode === 'local') return `PLAYER ${movers[0]}: ${verb}`;
+                if (movers.includes(me)) return verb;
+                return this.mode === 'ai' ? 'AI IS THINKING...' : 'WAITING FOR OPPONENT...';
+            }
+
+            render() {
+                const board = this.$('bgBoard'), st = this.$('bgStatus'), btn = this.$('bgRematch');
+                const sc = this.$('bgScore'), you = this.$('bgYou');
+                if (!this.state) {
+                    board.innerHTML = '';
+                    st.textContent = this.left ? 'OPPONENT LEFT' : 'WAITING FOR HOST...';
+                    st.style.color = '#9ca3af';
+                    btn.classList.add('hidden');
+                    sc.textContent = '';
+                    you.textContent = '';
+                    return;
+                }
+                const me = this.me();
+                this.def.render(this, board, this.state, this.result, me);
+
+                sc.textContent = `${this.nameOf(1)} ${this.scores[1]} - ${this.scores[2]} ${this.nameOf(2)}` +
+                    (this.scores[0] ? `  (draws: ${this.scores[0]})` : '');
+
+                if (this.mode === 'local') {
+                    you.textContent = '';
+                } else {
+                    you.textContent = 'YOU ARE ' + (me === 1 ? 'CYAN' : 'PINK');
+                    you.style.color = COL[me];
+                }
+
+                let text, color = '#d1d5db';
+                if (this.result) {
+                    const w = this.result.winner;
+                    if (w === 0) { text = 'DRAW!'; color = COL.win; }
+                    else if (this.mode === 'local') { text = `PLAYER ${w} WINS!`; color = COL[w]; }
+                    else { text = (w === me) ? 'YOU WIN!' : (this.mode === 'ai' ? 'AI WINS!' : 'YOU LOSE!'); color = COL[w]; }
+                } else if (this.left) {
+                    text = 'OPPONENT LEFT';
+                    color = COL[2];
+                } else {
+                    text = this.turnText(me);
+                    const mv = this.def.movers(this.state);
+                    if (mv.length === 1) color = COL[mv[0]];
+                }
+                st.textContent = text;
+                st.style.color = color;
+                btn.classList.toggle('hidden', !(this.result && !this.left));
+            }
+
+            // ----- Sortie -----
+            disconnect() {
+                if (this.net) { this.net.destroy(); this.net = null; }
+            }
+
+            backToLobby() { this.openLobby(this.gameId); }
+
+            stop() {
+                clearTimeout(this.aiTimer);
+                this.disconnect();
+                this.left = false;
+                this.state = null;
+                this.result = null;
+            }
+        }
+
+        const boardGame = new BoardController();
+    </script>
+
+    <script>
         window.addEventListener('DOMContentLoaded', () => {
             // Lien d'invitation : rejoint automatiquement la partie
             const hash = window.location.hash;
             if (hash.includes('room=')) {
                 const roomId = decodeURIComponent(hash.split('room=')[1].split('&')[0]);
+                // Le code de room contient le jeu : arcade-<jeu>-12345
+                const gm = roomId.match(/^arcade-([a-z0-9]+)-/);
+                const gid = gm ? gm[1] : 'pong';
+                if (gid !== 'pong' && BOARD_GAMES[gid]) {
+                    boardGame.openLobby(gid);
+                    boardGame.setMode('online');
+                    document.getElementById('olJoinInput').value = roomId;
+                    setTimeout(() => boardGame.joinRoom(), 300);
+                    return;
+                }
                 app.launchPongLobby();
                 pongGame.setMode('multi');
                 document.getElementById('joinCodeInput').value = roomId;
