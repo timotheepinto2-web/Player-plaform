@@ -468,4 +468,428 @@
                 } else {
                     let cost = i === 1 ? 500 : 1200;
                     card.className = "neon-box p-4 rounded-xl cursor-pointer transition border border-gray-700 flex flex-col items-center";
-                    status.innerText =
+                    status.innerText = `BLOQUÉ (${cost} 🪙)`; status.className = "mt-4 text-xs bg-gray-800 px-3 py-1 rounded text-gray-300";
+                }
+            }
+        }
+        function selectShip(idx) {
+            let costs = [0, 500, 1200];
+            if (gameData.unlockedShips[idx]) {
+                gameData.selectedShip = idx;
+            } else if (gameData.credits >= costs[idx]) {
+                gameData.credits -= costs[idx];
+                gameData.unlockedShips[idx] = true;
+                gameData.selectedShip = idx;
+                saveGame();
+            }
+            updateHangarUI();
+        }
+        function upgradeStat(stat) {
+            let costs = { damage: gameData.upgrades.damage * 100, fireRate: gameData.upgrades.fireRate * 150, shield: gameData.upgrades.shield * 200 };
+            if (gameData.credits >= costs[stat] && gameData.upgrades[stat] < 5) {
+                gameData.credits -= costs[stat];
+                gameData.upgrades[stat]++;
+                saveGame();
+                updateHangarUI();
+            }
+        }
+
+        function openMultiplayerMenu() {
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('multi-screen').classList.remove('hidden');
+        }
+        function closeMultiplayerMenu() {
+            document.getElementById('multi-screen').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let code = '';
+            for(let i=0; i<4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+        function hostGame() {
+            isHost = true;
+            roomCode = generateRoomCode();
+            peer = new Peer('ns-' + roomCode);
+            document.getElementById('lobby-status').innerText = `Code de salon : ${roomCode}. En attente du joueur 2...`;
+            
+            peer.on('connection', (connection) => {
+                conn = connection;
+                document.getElementById('lobby-status').innerText = "Joueur 2 connecté ! Lancement...";
+                setTimeout(() => {
+                    document.getElementById('multi-screen').classList.add('hidden');
+                    startGame(true);
+                }, 1000);
+            });
+        }
+        function joinGame() {
+            isHost = false;
+            roomCode = document.getElementById('room-code-input').value.toUpperCase();
+            if (roomCode.length !== 4) { alert("Code invalide (4 lettres requis)"); return; }
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect('ns-' + roomCode);
+                document.getElementById('lobby-status').innerText = "Connexion au salon...";
+                conn.on('open', () => {
+                    document.getElementById('multi-screen').classList.add('hidden');
+                    startGame(true);
+                });
+            });
+        }
+
+        function spawnWave() {
+            let enemyCount = 5 + wave * 2;
+            let cfg = diffConfig[currentDifficulty];
+
+            if (wave % 5 === 0) {
+                spawnBoss();
+                return;
+            }
+            for(let i=0; i<enemyCount; i++) {
+                setTimeout(() => {
+                    if (gameState !== 'PLAYING') return;
+                    let geo = new THREE.ConeGeometry(0.9, 2, 4);
+                    geo.rotateX(-Math.PI / 2);
+                    let mat = new THREE.MeshStandardMaterial({ color: 0xff2244, emissive: 0xff0033, emissiveIntensity: 0.6, metalness: 0.8 });
+                    let mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set((Math.random() - 0.5) * 20, GAME_Y_PLANE, -60 - Math.random() * 20);
+                    scene.add(mesh);
+                    enemies.push({ mesh: mesh, hp: 2, speed: (0.2 + wave * 0.02) * cfg.enemySpeedMult, shootTimer: Math.random() * 60 });
+                }, i * 500);
+            }
+        }
+
+        function spawnBoss() {
+            let geo = new THREE.BoxGeometry(4, 2, 4);
+            let mat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0022, metalness: 0.9, roughness: 0.1 });
+            let mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(0, GAME_Y_PLANE, -40);
+            scene.add(mesh);
+            boss = { mesh: mesh, hp: 80 + wave * 20, maxHp: 80 + wave * 20, phase: 1, shootTimer: 0 };
+            document.getElementById('boss-hud').classList.remove('hidden');
+        }
+
+        function triggerNuke() {
+            if (gameState !== 'PLAYING') return;
+            playSound('explosion');
+            enemies.forEach(e => {
+                createExplosion(e.mesh.position);
+                scene.remove(e.mesh);
+                score += 150;
+            });
+            enemies = [];
+            if (boss) {
+                boss.hp -= 150;
+                createExplosion(boss.mesh.position);
+            }
+            enemyBullets.forEach(b => scene.remove(b.mesh));
+            enemyBullets = [];
+        }
+
+        function createExplosion(pos) {
+            playSound('explosion');
+            for(let i=0; i<15; i++) {
+                let pGeo = new THREE.SphereGeometry(0.15, 6, 6);
+                let pMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff0055 : 0x00f3ff });
+                let p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+                scene.add(p);
+                particles.push({ mesh: p, velocity: new THREE.Vector3((Math.random()-0.5)*0.6, 0, (Math.random()-0.5)*0.6), life: 30 });
+            }
+        }
+
+        function spawnPowerup(pos) {
+            let geo = new THREE.OctahedronGeometry(0.6);
+            let mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.8 });
+            let mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            mesh.position.y = GAME_Y_PLANE;
+            scene.add(mesh);
+            powerups.push({ mesh: mesh });
+        }
+
+        // --- GAME LOOP ---
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            let cfg = diffConfig[currentDifficulty];
+
+            let starPos = stars.geometry.attributes.position.array;
+            for(let i=2; i<starPos.length; i+=3) {
+                starPos[i] += 0.8;
+                if (starPos[i] > 20) starPos[i] = -250;
+            }
+            stars.geometry.attributes.position.needsUpdate = true;
+
+            // --- CONTRÔLES JOUEUR 1 (Uniquement Gauche / Droite : Q et D ou Flèches) ---
+            let dx1 = 0;
+            if (keys['KeyA'] || keys['ArrowLeft']) dx1 = -1;
+            if (keys['KeyD'] || keys['ArrowRight']) dx1 = 1;
+            if (joystickActive) { dx1 = joystickData.x; }
+
+            player1.x += dx1 * player1.speed;
+            player1.x = Math.max(-12, Math.min(12, player1.x));
+            player1.mesh.position.set(player1.x, GAME_Y_PLANE, player1.z);
+            player1.mesh.rotation.z = -dx1 * 0.3;
+
+            // Tir J1 (Espace)
+            if (player1.fireCooldown > 0) player1.fireCooldown--;
+            if (keys['Space'] && player1.fireCooldown === 0) {
+                playSound('laser');
+                let dmg = gameData.upgrades.damage;
+                let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
+                bGeo.rotateX(Math.PI / 2);
+                let bMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+                let bMesh = new THREE.Mesh(bGeo, bMat);
+                bMesh.position.set(player1.x, GAME_Y_PLANE, player1.z - 1);
+                scene.add(bMesh);
+                bullets.push({ mesh: bMesh, damage: dmg, owner: 1 });
+                player1.fireCooldown = Math.max(4, 15 - gameData.upgrades.fireRate * 2);
+            }
+
+            // --- CONTRÔLES JOUEUR 2 (Gaucher : J et L) ---
+            if (isCoop) {
+                let dx2 = 0;
+                if (keys['KeyJ']) dx2 = -1;
+                if (keys['KeyL']) dx2 = 1;
+
+                player2.x += dx2 * player2.speed;
+                player2.x = Math.max(-12, Math.min(12, player2.x));
+                player2.mesh.position.set(player2.x, GAME_Y_PLANE, player2.z);
+                player2.mesh.rotation.z = -dx2 * 0.3;
+
+                // Tir J2 (Touche Entrée / Enter)
+                if (player2.fireCooldown > 0) player2.fireCooldown--;
+                if (keys['Enter'] && player2.fireCooldown === 0) {
+                    playSound('laser');
+                    let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
+                    bGeo.rotateX(Math.PI / 2);
+                    let bMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+                    let bMesh = new THREE.Mesh(bGeo, bMat);
+                    bMesh.position.set(player2.x, GAME_Y_PLANE, player2.z - 1);
+                    scene.add(bMesh);
+                    bullets.push({ mesh: bMesh, damage: 1, owner: 2 });
+                    player2.fireCooldown = 10;
+                }
+            }
+
+            // --- UPDATE BULLETS ---
+            for(let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.mesh.position.z -= 1.2;
+                if (b.mesh.position.z < -80) {
+                    scene.remove(b.mesh);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // --- UPDATE ENEMY BULLETS ---
+            for(let i = enemyBullets.length - 1; i >= 0; i--) {
+                let eb = enemyBullets[i];
+                eb.mesh.position.add(eb.velocity);
+                if (eb.mesh.position.z > 25) {
+                    scene.remove(eb.mesh);
+                    enemyBullets.splice(i, 1);
+                    continue;
+                }
+                if (player1.alive && eb.mesh.position.distanceTo(player1.mesh.position) < 1.2) {
+                    scene.remove(eb.mesh);
+                    enemyBullets.splice(i, 1);
+                    player1.shield -= cfg.damageReceived;
+                    if (player1.shield <= 0) {
+                        player1.alive = false;
+                        scene.remove(player1.mesh);
+                    }
+                    continue;
+                }
+                if (isCoop && player2.alive && eb.mesh.position.distanceTo(player2.mesh.position) < 1.2) {
+                    scene.remove(eb.mesh);
+                    enemyBullets.splice(i, 1);
+                    player2.shield -= cfg.damageReceived;
+                    if (player2.shield <= 0) {
+                        player2.alive = false;
+                        scene.remove(player2.mesh);
+                    }
+                    continue;
+                }
+            }
+
+            // --- UPDATE ENEMIES ---
+            for(let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.mesh.position.z += e.speed;
+                e.mesh.rotation.y += 0.02;
+
+                e.shootTimer++;
+                if (e.shootTimer > cfg.enemyShootTimer) {
+                    e.shootTimer = 0;
+                    let ebGeo = new THREE.SphereGeometry(0.3, 8, 8);
+                    let ebMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
+                    let ebMesh = new THREE.Mesh(ebGeo, ebMat);
+                    ebMesh.position.copy(e.mesh.position);
+                    let targetPos = player1.mesh.position;
+                    let dir = new THREE.Vector3().subVectors(targetPos, e.mesh.position).normalize().multiplyScalar(0.4);
+                    dir.y = 0;
+                    scene.add(ebMesh);
+                    enemyBullets.push({ mesh: ebMesh, velocity: dir });
+                }
+
+                for(let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    if (e.mesh.position.distanceTo(b.mesh.position) < 1.5) {
+                        e.hp -= b.damage;
+                        scene.remove(b.mesh);
+                        bullets.splice(j, 1);
+
+                        if (e.hp <= 0) {
+                            createExplosion(e.mesh.position);
+                            if (Math.random() < 0.3) spawnPowerup(e.mesh.position);
+                            scene.remove(e.mesh);
+                            enemies.splice(i, 1);
+                            score += 100;
+                            sessionCredits += 10;
+                            break;
+                        }
+                    }
+                }
+
+                if (player1.alive && e.mesh.position.distanceTo(player1.mesh.position) < 1.5) {
+                    player1.shield -= (cfg.damageReceived + 15);
+                    createExplosion(e.mesh.position);
+                    scene.remove(e.mesh);
+                    enemies.splice(i, 1);
+                    if (player1.shield <= 0) { player1.alive = false; scene.remove(player1.mesh); }
+                }
+
+                if (e && e.mesh.position.z > 25) {
+                    scene.remove(e.mesh);
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // --- UPDATE BOSS ---
+            if (boss) {
+                boss.mesh.position.z += 0.05;
+                if (boss.mesh.position.z > -15) boss.mesh.position.z = -15;
+                boss.mesh.rotation.y += 0.01;
+
+                boss.shootTimer++;
+                if (boss.shootTimer > 40) {
+                    boss.shootTimer = 0;
+                    for(let a = -1; a <= 1; a += 2) {
+                        let ebGeo = new THREE.SphereGeometry(0.4, 8, 8);
+                        let ebMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
+                        let ebMesh = new THREE.Mesh(ebGeo, ebMat);
+                        ebMesh.position.copy(boss.mesh.position).add(new THREE.Vector3(a * 2, 0, 0));
+                        scene.add(ebMesh);
+                        enemyBullets.push({ mesh: ebMesh, velocity: new THREE.Vector3(a * 0.1, 0, 0.5) });
+                    }
+                }
+
+                for(let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    if (boss.mesh.position.distanceTo(b.mesh.position) < 2.5) {
+                        boss.hp -= b.damage;
+                        scene.remove(b.mesh);
+                        bullets.splice(j, 1);
+
+                        let hpPercent = Math.max(0, (boss.hp / boss.maxHp) * 100);
+                        document.getElementById('boss-hp-bar').style.width = hpPercent + '%';
+                        document.getElementById('boss-hp-text').innerText = Math.round(hpPercent) + '%';
+
+                        if (boss.hp <= 0) {
+                            createExplosion(boss.mesh.position);
+                            createExplosion(boss.mesh.position);
+                            scene.remove(boss.mesh);
+                            boss = null;
+                            document.getElementById('boss-hud').classList.add('hidden');
+                            score += 1000;
+                            sessionCredits += 150;
+                            wave++;
+                            spawnWave();
+                        }
+                    }
+                }
+            }
+
+            // --- UPDATE POWERUPS ---
+            for(let i = powerups.length - 1; i >= 0; i--) {
+                let p = powerups[i];
+                p.mesh.position.z += 0.4;
+                p.mesh.rotation.y += 0.05;
+
+                if (player1.alive && p.mesh.position.distanceTo(player1.mesh.position) < 2) {
+                    playSound('powerup');
+                    player1.shield = Math.min(player1.maxShield, player1.shield + 40);
+                    scene.remove(p.mesh);
+                    powerups.splice(i, 1);
+                    continue;
+                }
+                if (isCoop && player2.alive && p.mesh.position.distanceTo(player2.mesh.position) < 2) {
+                    playSound('powerup');
+                    player2.shield = Math.min(player2.maxShield, player2.shield + 40);
+                    scene.remove(p.mesh);
+                    powerups.splice(i, 1);
+                    continue;
+                }
+                if (p.mesh.position.z > 20) {
+                    scene.remove(p.mesh);
+                    powerups.splice(i, 1);
+                }
+            }
+
+            // --- UPDATE PARTICLES ---
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let pt = particles[i];
+                pt.mesh.position.add(pt.velocity);
+                pt.life--;
+                if (pt.life <= 0) {
+                    scene.remove(pt.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+
+            if (enemies.length === 0 && !boss && gameState === 'PLAYING') {
+                wave++;
+                spawnWave();
+            }
+
+            let p1Dead = !player1.alive;
+            let p2Dead = isCoop && !player2.alive;
+            if (p1Dead && (!isCoop || p2Dead)) {
+                gameState = 'GAMEOVER';
+                gameData.credits += sessionCredits;
+                if (score > gameData.highScore) gameData.highScore = score;
+                saveGame();
+
+                document.getElementById('hud-top').classList.add('hidden');
+                document.getElementById('gameover-screen').classList.remove('hidden');
+                document.getElementById('final-score').innerText = score;
+                document.getElementById('final-credits').innerText = sessionCredits;
+            }
+
+            document.getElementById('score-display').innerText = String(score).padStart(6, '0');
+            document.getElementById('wave-display').innerText = wave;
+            document.getElementById('credits-display').innerText = gameData.credits;
+            
+            let p1HpPct = Math.max(0, (player1.shield / player1.maxShield) * 100);
+            document.getElementById('shield-bar-1').style.width = p1HpPct + '%';
+
+            if (isCoop) {
+                let p2HpPct = Math.max(0, (player2.shield / player2.maxShield) * 100);
+                document.getElementById('shield-bar-2').style.width = p2HpPct + '%';
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+
+        init3D();
+        animate();
+    </script>
+</body>
+</html>
