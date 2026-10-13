@@ -88,9 +88,17 @@
 
     <!-- Main Menu Overlay -->
     <div id="menu-screen" class="absolute inset-0 z-40 bg-[#030008]/90 flex flex-col items-center justify-center p-6">
-        <div class="text-center mb-8">
+        <div class="text-center mb-6">
             <h1 class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400 tracking-wider neon-glow-cyan">NEON STARFIGHTER</h1>
             <p class="text-cyan-300/70 text-sm tracking-widest mt-2">ULTRA ARCADE CO-OP EDITION</p>
+        </div>
+
+        <!-- Choice of Difficulty -->
+        <div class="flex items-center gap-3 mb-6">
+            <span class="text-xs text-gray-400 font-bold">DIFFICULTÉ :</span>
+            <button onclick="setDifficulty('easy')" id="diff-easy" class="px-3 py-1 text-xs font-bold rounded border border-green-500 bg-green-950/50 text-green-300">FACILE</button>
+            <button onclick="setDifficulty('normal')" id="diff-normal" class="px-3 py-1 text-xs font-bold rounded border border-cyan-500 bg-cyan-500/20 text-cyan-300">NORMAL</button>
+            <button onclick="setDifficulty('hard')" id="diff-hard" class="px-3 py-1 text-xs font-bold rounded border border-red-500 bg-red-950/50 text-red-300">DIFFICILE</button>
         </div>
 
         <div class="flex flex-col gap-4 w-80">
@@ -99,8 +107,8 @@
             <button onclick="openHangar()" class="neon-box py-4 rounded font-bold text-yellow-400 hover:bg-yellow-500/20 transition text-lg tracking-wider">HANGAR & BOUTIQUE</button>
         </div>
         <div class="mt-8 text-xs text-gray-400 text-center">
-            <p>J1 : ZQSD / Flèches | Tir : <span class="text-cyan-300 font-bold">BARRE ESPACE</span></p>
-            <p class="mt-1">J2 (Co-op Clavier) : Tir : <span class="text-yellow-300 font-bold">ENTRÉE (Enter)</span></p>
+            <p>J1 : Q / D (ou Flèches Gauche/Droite) | Tir : <span class="text-cyan-300 font-bold">BARRE ESPACE</span></p>
+            <p class="mt-1">J2 (Co-op) : J / L | Tir : <span class="text-yellow-300 font-bold">ENTRÉE (Enter)</span></p>
         </div>
     </div>
 
@@ -125,19 +133,16 @@
         <div class="text-yellow-300 mb-6 text-xl">Crédits disponibles : <span id="hangar-credits">0</span> 🪙</div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full mb-8">
-            <!-- Vaisseau 1 -->
             <div onclick="selectShip(0)" id="ship-card-0" class="neon-box p-4 rounded-xl cursor-pointer transition border-2 border-cyan-500 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-cyan-300">AIGUILLE</h3>
                 <p class="text-xs text-gray-400 mt-2 text-center">Rapide et précis. Équilibré pour tout type de mission.</p>
                 <span id="ship-status-0" class="mt-4 text-xs bg-cyan-950 px-3 py-1 rounded text-cyan-300">SÉLECTIONNÉ</span>
             </div>
-            <!-- Vaisseau 2 -->
             <div onclick="selectShip(1)" id="ship-card-1" class="neon-box p-4 rounded-xl cursor-pointer transition border border-gray-700 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-yellow-300">TITAN LOURD</h3>
                 <p class="text-xs text-gray-400 mt-2 text-center">Blindage renforcé et tirs puissants, mais moins véloce.</p>
                 <span id="ship-status-1" class="mt-4 text-xs bg-gray-800 px-3 py-1 rounded text-gray-300">BLOQUÉ (500 🪙)</span>
             </div>
-            <!-- Vaisseau 3 -->
             <div onclick="selectShip(2)" id="ship-card-2" class="neon-box p-4 rounded-xl cursor-pointer transition border border-gray-700 flex flex-col items-center">
                 <h3 class="text-lg font-bold text-pink-400">SPECTRE</h3>
                 <p class="text-xs text-gray-400 mt-2 text-center">Vitesse fulgurante et double canon laser.</p>
@@ -186,21 +191,44 @@
             localStorage.setItem('neon_starfighter_save', JSON.stringify(gameData));
         }
 
+        let currentDifficulty = 'normal';
+        let diffConfig = {
+            easy: { enemySpeedMult: 0.6, enemyShootTimer: 140, damageReceived: 10 },
+            normal: { enemySpeedMult: 1.0, enemyShootTimer: 90, damageReceived: 20 },
+            hard: { enemySpeedMult: 1.4, enemyShootTimer: 50, damageReceived: 35 }
+        };
+
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            ['easy', 'normal', 'hard'].forEach(d => {
+                let btn = document.getElementById(`diff-${d}`);
+                if (d === diff) {
+                    btn.style.opacity = '1';
+                    btn.style.transform = 'scale(1.05)';
+                } else {
+                    btn.style.opacity = '0.4';
+                    btn.style.transform = 'scale(1)';
+                }
+            });
+        }
+
         let scene, camera, renderer, clock;
-        let gameState = 'MENU'; // MENU, PLAYING, PAUSED, GAMEOVER, MULTI_LOBBY
+        let gameState = 'MENU';
         let score = 0, wave = 1, sessionCredits = 0;
         let enemies = [], bullets = [], enemyBullets = [], powerups = [], particles = [];
         let stars;
         let isCoop = false, peer = null, conn = null, isHost = false, roomCode = '';
 
-        // Player states
+        // Fixed Y altitude for clean 2D lateral gameplay
+        const GAME_Y_PLANE = 0;
+
         let player1 = {
-            mesh: null, x: 0, y: 0, z: 0, shield: 100, maxShield: 100, 
-            fireCooldown: 0, speed: 0.6, alive: true
+            mesh: null, x: 0, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, 
+            fireCooldown: 0, speed: 0.5, alive: true
         };
         let player2 = {
-            mesh: null, x: 3, y: 0, z: 0, shield: 100, maxShield: 100, 
-            fireCooldown: 0, speed: 0.6, alive: true
+            mesh: null, x: 3, y: GAME_Y_PLANE, z: 0, shield: 100, maxShield: 100, 
+            fireCooldown: 0, speed: 0.5, alive: true
         };
 
         let keys = {};
@@ -253,7 +281,7 @@
             scene.fog = new THREE.FogExp2(0x030008, 0.015);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 15, 22);
+            camera.position.set(0, 18, 20);
             camera.lookAt(0, 0, -5);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -262,8 +290,7 @@
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
             const dirLight = new THREE.DirectionalLight(0x00f3ff, 1.5);
@@ -291,6 +318,7 @@
             clock = new THREE.Clock();
             window.addEventListener('resize', onWindowResize);
             setupInput();
+            setDifficulty('normal');
         }
 
         function onWindowResize() {
@@ -299,24 +327,20 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- SHIP CREATION ---
         function createShipMesh(colorHex) {
             const group = new THREE.Group();
-            // Fuselage
             const bodyGeo = new THREE.ConeGeometry(0.8, 2.5, 4);
             bodyGeo.rotateX(Math.PI / 2);
             const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.8, roughness: 0.2, emissive: colorHex, emissiveIntensity: 0.3 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             group.add(body);
 
-            // Ailes
             const wingGeo = new THREE.BoxGeometry(2.2, 0.1, 1);
             const wingMat = new THREE.MeshStandardMaterial({ color: 0x111122, metalness: 0.5, roughness: 0.5 });
             const wings = new THREE.Mesh(wingGeo, wingMat);
             wings.position.z = 0.3;
             group.add(wings);
 
-            // Réacteur lueur
             const reactorGeo = new THREE.SphereGeometry(0.3, 8, 8);
             const reactorMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
             const reactor = new THREE.Mesh(reactorGeo, reactorMat);
@@ -326,7 +350,6 @@
             return group;
         }
 
-        // --- INPUT HANDLING ---
         function setupInput() {
             window.addEventListener('keydown', (e) => {
                 keys[e.code] = true;
@@ -334,7 +357,6 @@
             });
             window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-            // Mobile detection & setup
             if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 document.getElementById('mobile-controls').classList.remove('hidden');
                 document.getElementById('mobile-controls').classList.add('flex');
@@ -346,34 +368,28 @@
         function setupJoystick() {
             const joystick = document.getElementById('virtual-joystick');
             const thumb = document.getElementById('joystick-thumb');
-            const rect = joystick.getBoundingClientRect();
-            const center = {x: rect.width / 2, y: rect.height / 2};
 
-            joystick.addEventListener('pointerdown', (e) => { joystickActive = true; });
+            joystick.addEventListener('pointerdown', () => { joystickActive = true; });
             window.addEventListener('pointermove', (e) => {
                 if (!joystickActive) return;
                 const r = joystick.getBoundingClientRect();
                 let dx = e.clientX - (r.left + r.width/2);
-                let dy = e.clientY - (r.top + r.height/2);
-                const dist = Math.hypot(dx, dy);
                 const maxDist = 40;
-                if (dist > maxDist) { dx *= maxDist/dist; dy *= maxDist/dist; }
-                thumb.style.transform = `translate(${dx}px, ${dy}px)`;
+                dx = Math.max(-maxDist, Math.min(maxDist, dx));
+                thumb.style.transform = `translate(${dx}px, 0px)`;
                 joystickData.x = dx / maxDist;
-                joystickData.y = dy / maxDist;
             });
             window.addEventListener('pointerup', () => {
                 if (!joystickActive) return;
                 joystickActive = false;
                 thumb.style.transform = `translate(0px, 0px)`;
-                joystickData.x = 0; joystickData.y = 0;
+                joystickData.x = 0;
             });
 
             document.getElementById('btn-fire').addEventListener('pointerdown', () => { keys['Space'] = true; });
             document.getElementById('btn-fire').addEventListener('pointerup', () => { keys['Space'] = false; });
         }
 
-        // --- GAMEFLOW ---
         function startGame(coopMode) {
             initAudio();
             isCoop = coopMode;
@@ -382,25 +398,23 @@
             document.getElementById('hud-top').classList.remove('hidden');
             if (isCoop) document.getElementById('hud-p2').classList.remove('hidden');
 
-            // Reset variables
             score = 0; wave = 1; sessionCredits = 0;
             enemies = []; bullets = []; enemyBullets = []; powerups = []; particles = [];
             boss = null;
 
-            // Create Players
             if (player1.mesh) scene.remove(player1.mesh);
             if (player2.mesh) scene.remove(player2.mesh);
 
             let p1Color = gameData.selectedShip === 0 ? 0x00f3ff : gameData.selectedShip === 1 ? 0xffaa00 : 0xff0055;
             player1.mesh = createShipMesh(p1Color);
-            player1.x = isCoop ? -2 : 0; player1.y = 0; player1.z = 0;
+            player1.x = isCoop ? -2 : 0; player1.y = GAME_Y_PLANE; player1.z = 0;
             player1.maxShield = 100 + (gameData.upgrades.shield - 1) * 25;
             player1.shield = player1.maxShield;
             scene.add(player1.mesh);
 
             if (isCoop) {
                 player2.mesh = createShipMesh(0xffd700);
-                player2.x = 2; player2.y = 0; player2.z = 0;
+                player2.x = 2; player2.y = GAME_Y_PLANE; player2.z = 0;
                 player2.maxShield = 100; player2.shield = 100;
                 scene.add(player2.mesh);
             }
@@ -423,7 +437,6 @@
             document.getElementById('menu-screen').classList.remove('hidden');
         }
 
-        // --- HANGAR & SHOP ---
         function openHangar() {
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('hangar-screen').classList.remove('hidden');
@@ -455,444 +468,4 @@
                 } else {
                     let cost = i === 1 ? 500 : 1200;
                     card.className = "neon-box p-4 rounded-xl cursor-pointer transition border border-gray-700 flex flex-col items-center";
-                    status.innerText = `BLOQUÉ (${cost} 🪙)`; status.className = "mt-4 text-xs bg-gray-800 px-3 py-1 rounded text-gray-300";
-                }
-            }
-        }
-        function selectShip(idx) {
-            let costs = [0, 500, 1200];
-            if (gameData.unlockedShips[idx]) {
-                gameData.selectedShip = idx;
-            } else if (gameData.credits >= costs[idx]) {
-                gameData.credits -= costs[idx];
-                gameData.unlockedShips[idx] = true;
-                gameData.selectedShip = idx;
-                saveGame();
-            }
-            updateHangarUI();
-        }
-        function upgradeStat(stat) {
-            let costs = { damage: gameData.upgrades.damage * 100, fireRate: gameData.upgrades.fireRate * 150, shield: gameData.upgrades.shield * 200 };
-            if (gameData.credits >= costs[stat] && gameData.upgrades[stat] < 5) {
-                gameData.credits -= costs[stat];
-                gameData.upgrades[stat]++;
-                saveGame();
-                updateHangarUI();
-            }
-        }
-
-        // --- MULTIPLAYER SETUP ---
-        function openMultiplayerMenu() {
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('multi-screen').classList.remove('hidden');
-        }
-        function closeMultiplayerMenu() {
-            document.getElementById('multi-screen').classList.add('hidden');
-            document.getElementById('menu-screen').classList.remove('hidden');
-        }
-        function generateRoomCode() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let code = '';
-            for(let i=0; i<4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-            return code;
-        }
-        function hostGame() {
-            isHost = true;
-            roomCode = generateRoomCode();
-            peer = new Peer('ns-' + roomCode);
-            document.getElementById('lobby-status').innerText = `Code de salon : ${roomCode}. En attente du joueur 2...`;
-            
-            peer.on('connection', (connection) => {
-                conn = connection;
-                document.getElementById('lobby-status').innerText = "Joueur 2 connecté ! Lancement...";
-                setTimeout(() => {
-                    document.getElementById('multi-screen').classList.add('hidden');
-                    startGame(true);
-                }, 1000);
-            });
-        }
-        function joinGame() {
-            isHost = false;
-            roomCode = document.getElementById('room-code-input').value.toUpperCase();
-            if (roomCode.length !== 4) { alert("Code invalide (4 lettres requis)"); return; }
-            peer = new Peer();
-            peer.on('open', () => {
-                conn = peer.connect('ns-' + roomCode);
-                document.getElementById('lobby-status').innerText = "Connexion au salon...";
-                conn.on('open', () => {
-                    document.getElementById('multi-screen').classList.add('hidden');
-                    startGame(true);
-                });
-            });
-        }
-
-        // --- GAMEPLAY SPAWN & WAVE LOGIC ---
-        function spawnWave() {
-            let enemyCount = 6 + wave * 3;
-            if (wave % 5 === 0) {
-                spawnBoss();
-                return;
-            }
-            for(let i=0; i<enemyCount; i++) {
-                setTimeout(() => {
-                    if (gameState !== 'PLAYING') return;
-                    let geo = new THREE.ConeGeometry(0.9, 2, 4);
-                    geo.rotateX(-Math.PI / 2);
-                    let mat = new THREE.MeshStandardMaterial({ color: 0xff2244, emissive: 0xff0033, emissiveIntensity: 0.6, metalness: 0.8 });
-                    let mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.set((Math.random() - 0.5) * 18, (Math.random() - 0.5) * 6, -60 - Math.random() * 20);
-                    scene.add(mesh);
-                    enemies.push({ mesh: mesh, hp: 2, speed: 0.25 + wave * 0.03, type: 'hunter', shootTimer: Math.random() * 60 });
-                }, i * 400);
-            }
-        }
-
-        function spawnBoss() {
-            let geo = new THREE.BoxGeometry(4, 2, 4);
-            let mat = new THREE.MeshStandardMaterial({ color: 0xff0055, emissive: 0xff0022, metalness: 0.9, roughness: 0.1 });
-            let mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(0, 0, -40);
-            scene.add(mesh);
-            boss = { mesh: mesh, hp: 100 + wave * 25, maxHp: 100 + wave * 25, phase: 1, shootTimer: 0 };
-            document.getElementById('boss-hud').classList.remove('hidden');
-        }
-
-        function triggerNuke() {
-            if (gameState !== 'PLAYING') return;
-            playSound('explosion');
-            enemies.forEach(e => {
-                createExplosion(e.mesh.position);
-                scene.remove(e.mesh);
-                score += 150;
-            });
-            enemies = [];
-            if (boss) {
-                boss.hp -= 150;
-                createExplosion(boss.mesh.position);
-            }
-            enemyBullets.forEach(b => scene.remove(b.mesh));
-            enemyBullets = [];
-        }
-
-        function createExplosion(pos) {
-            playSound('explosion');
-            for(let i=0; i<15; i++) {
-                let pGeo = new THREE.SphereGeometry(0.15, 6, 6);
-                let pMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff0055 : 0x00f3ff });
-                let p = new THREE.Mesh(pGeo, pMat);
-                p.position.copy(pos);
-                scene.add(p);
-                particles.push({ mesh: p, velocity: new THREE.Vector3((Math.random()-0.5)*0.6, (Math.random()-0.5)*0.6, (Math.random()-0.5)*0.6), life: 30 });
-            }
-        }
-
-        function spawnPowerup(pos) {
-            let geo = new THREE.OctahedronGeometry(0.6);
-            let mat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.8 });
-            let mesh = new THREE.Mesh(geo, mat);
-            mesh.position.copy(pos);
-            scene.add(mesh);
-            powerups.push({ mesh: mesh });
-        }
-
-        // --- GAME LOOP ---
-        function update() {
-            if (gameState !== 'PLAYING') return;
-
-            // Étoiles effet de vitesse
-            let starPos = stars.geometry.attributes.position.array;
-            for(let i=2; i<starPos.length; i+=3) {
-                starPos[i] += 0.8;
-                if (starPos[i] > 20) starPos[i] = -250;
-            }
-            stars.geometry.attributes.position.needsUpdate = true;
-
-            // --- CONTRÔLES JOUEUR 1 ---
-            let dx1 = 0, dy1 = 0;
-            if (keys['KeyW'] || keys['ArrowUp']) dy1 = 1;
-            if (keys['KeyS'] || keys['ArrowDown']) dy1 = -1;
-            if (keys['KeyA'] || keys['ArrowLeft']) dx1 = -1;
-            if (keys['KeyD'] || keys['ArrowRight']) dx1 = 1;
-            if (joystickActive) { dx1 = joystickData.x; dy1 = -joystickData.y; }
-
-            player1.x += dx1 * player1.speed;
-            player1.y += dy1 * player1.speed;
-            player1.x = Math.max(-12, Math.min(12, player1.x));
-            player1.y = Math.max(-6, Math.min(6, player1.y));
-            player1.mesh.position.set(player1.x, player1.y, player1.z);
-            player1.mesh.rotation.z = -dx1 * 0.3;
-
-            // Tir J1 (Espace)
-            if (player1.fireCooldown > 0) player1.fireCooldown--;
-            if (keys['Space'] && player1.fireCooldown === 0) {
-                playSound('laser');
-                let dmg = gameData.upgrades.damage;
-                let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
-                bGeo.rotateX(Math.PI / 2);
-                let bMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-                let bMesh = new THREE.Mesh(bGeo, bMat);
-                bMesh.position.set(player1.x, player1.y, player1.z - 1);
-                scene.add(bMesh);
-                bullets.push({ mesh: bMesh, damage: dmg, owner: 1 });
-                player1.fireCooldown = Math.max(4, 15 - gameData.upgrades.fireRate * 2);
-            }
-
-            // --- CONTRÔLES JOUEUR 2 ---
-            if (isCoop) {
-                let dx2 = 0, dy2 = 0;
-                if (keys['KeyI']) dy2 = 1;
-                if (keys['KeyK']) dy2 = -1;
-                if (keys['KeyJ']) dx2 = -1;
-                if (keys['KeyL']) dx2 = 1;
-
-                player2.x += dx2 * player2.speed;
-                player2.y += dy2 * player2.speed;
-                player2.x = Math.max(-12, Math.min(12, player2.x));
-                player2.y = Math.max(-6, Math.min(6, player2.y));
-                player2.mesh.position.set(player2.x, player2.y, player2.z);
-                player2.mesh.rotation.z = -dx2 * 0.3;
-
-                // Tir J2 (Touche Entrée / Enter)
-                if (player2.fireCooldown > 0) player2.fireCooldown--;
-                if (keys['Enter'] && player2.fireCooldown === 0) {
-                    playSound('laser');
-                    let bGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.2, 6);
-                    bGeo.rotateX(Math.PI / 2);
-                    let bMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-                    let bMesh = new THREE.Mesh(bGeo, bMat);
-                    bMesh.position.set(player2.x, player2.y, player2.z - 1);
-                    scene.add(bMesh);
-                    bullets.push({ mesh: bMesh, damage: 1, owner: 2 });
-                    player2.fireCooldown = 10;
-                }
-            }
-
-            // --- UPDATE BULLETS ---
-            for(let i = bullets.length - 1; i >= 0; i--) {
-                let b = bullets[i];
-                b.mesh.position.z -= 1.2;
-                if (b.mesh.position.z < -80) {
-                    scene.remove(b.mesh);
-                    bullets.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE ENEMY BULLETS ---
-            for(let i = enemyBullets.length - 1; i >= 0; i--) {
-                let eb = enemyBullets[i];
-                eb.mesh.position.add(eb.velocity);
-                if (eb.mesh.position.z > 25) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    continue;
-                }
-                // Check collision player 1
-                if (player1.alive && eb.mesh.position.distanceTo(player1.mesh.position) < 1.2) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    player1.shield -= 20;
-                    if (player1.shield <= 0) {
-                        player1.alive = false;
-                        scene.remove(player1.mesh);
-                    }
-                    continue;
-                }
-                // Check collision player 2
-                if (isCoop && player2.alive && eb.mesh.position.distanceTo(player2.mesh.position) < 1.2) {
-                    scene.remove(eb.mesh);
-                    enemyBullets.splice(i, 1);
-                    player2.shield -= 20;
-                    if (player2.shield <= 0) {
-                        player2.alive = false;
-                        scene.remove(player2.mesh);
-                    }
-                    continue;
-                }
-            }
-
-            // --- UPDATE ENEMIES ---
-            for(let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies.get ? enemies[i] : enemies[i];
-                e.mesh.position.z += e.speed;
-                e.mesh.rotation.y += 0.02;
-
-                // Tir ennemi occasionnel
-                e.shootTimer++;
-                if (e.shootTimer > 90) {
-                    e.shootTimer = 0;
-                    let ebGeo = new THREE.SphereGeometry(0.3, 8, 8);
-                    let ebMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
-                    let ebMesh = new THREE.Mesh(ebGeo, ebMat);
-                    ebMesh.position.copy(e.mesh.position);
-                    let targetPos = player1.mesh.position;
-                    let dir = new THREE.Vector3().subVectors(targetPos, e.mesh.position).normalize().multiplyScalar(0.5);
-                    scene.add(ebMesh);
-                    enemyBullets.push({ mesh: ebMesh, velocity: dir });
-                }
-
-                // Check collision avec les tirs
-                for(let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    if (e.mesh.position.distanceTo(b.mesh.position) < 1.5) {
-                        e.hp -= b.damage;
-                        scene.remove(b.mesh);
-                        bullets.splice(j, 1);
-
-                        if (e.hp <= 0) {
-                            createExplosion(e.mesh.position);
-                            if (Math.random() < 0.25) spawnPowerup(e.mesh.position);
-                            scene.remove(e.mesh);
-                            enemies.splice(i, 1);
-                            score += 100;
-                            sessionCredits += 10;
-                            break;
-                        }
-                    }
-                }
-
-                // Check collision avec joueurs
-                if (player1.alive && e.mesh.position.distanceTo(player1.mesh.position) < 1.5) {
-                    player1.shield -= 35;
-                    createExplosion(e.mesh.position);
-                    scene.remove(e.mesh);
-                    enemies.splice(i, 1);
-                    if (player1.shield <= 0) { player1.alive = false; scene.remove(player1.mesh); }
-                }
-
-                // Despawn enemy
-                if (e && e.mesh.position.z > 25) {
-                    scene.remove(e.mesh);
-                    enemies.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE BOSS ---
-            if (boss) {
-                boss.mesh.position.z += 0.05;
-                if (boss.mesh.position.z > -15) boss.mesh.position.z = -15;
-                boss.mesh.rotation.y += 0.01;
-
-                boss.shootTimer++;
-                if (boss.shootTimer > 40) {
-                    boss.shootTimer = 0;
-                    for(let a = -1; a <= 1; a += 2) {
-                        let ebGeo = new THREE.SphereGeometry(0.4, 8, 8);
-                        let ebMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
-                        let ebMesh = new THREE.Mesh(ebGeo, ebMat);
-                        ebMesh.position.copy(boss.mesh.position).add(new THREE.Vector3(a * 2, 0, 0));
-                        scene.add(ebMesh);
-                        enemyBullets.push({ mesh: ebMesh, velocity: new THREE.Vector3(a * 0.1, 0, 0.6) });
-                    }
-                }
-
-                // Boss collision bullets
-                for(let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    if (boss.mesh.position.distanceTo(b.mesh.position) < 2.5) {
-                        boss.hp -= b.damage;
-                        scene.remove(b.mesh);
-                        bullets.splice(j, 1);
-
-                        let hpPercent = Math.max(0, (boss.hp / boss.maxHp) * 100);
-                        document.getElementById('boss-hp-bar').style.width = hpPercent + '%';
-                        document.getElementById('boss-hp-text').innerText = Math.round(hpPercent) + '%';
-
-                        if (boss.hp <= 0) {
-                            createExplosion(boss.mesh.position);
-                            createExplosion(boss.mesh.position);
-                            scene.remove(boss.mesh);
-                            boss = null;
-                            document.getElementById('boss-hud').classList.add('hidden');
-                            score += 1000;
-                            sessionCredits += 150;
-                            wave++;
-                            spawnWave();
-                        }
-                    }
-                }
-            }
-
-            // --- UPDATE POWERUPS ---
-            for(let i = powerups.length - 1; i >= 0; i--) {
-                let p = powerups[i];
-                p.mesh.position.z += 0.4;
-                p.mesh.rotation.y += 0.05;
-
-                if (player1.alive && p.mesh.position.distanceTo(player1.mesh.position) < 2) {
-                    playSound('powerup');
-                    player1.shield = Math.min(player1.maxShield, player1.shield + 40);
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                    continue;
-                }
-                if (isCoop && player2.alive && p.mesh.position.distanceTo(player2.mesh.position) < 2) {
-                    playSound('powerup');
-                    player2.shield = Math.min(player2.maxShield, player2.shield + 40);
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                    continue;
-                }
-                if (p.mesh.position.z > 20) {
-                    scene.remove(p.mesh);
-                    powerups.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE PARTICLES ---
-            for(let i = particles.length - 1; i >= 0; i--) {
-                let pt = particles[i];
-                pt.mesh.position.add(pt.velocity);
-                pt.life--;
-                if (pt.life <= 0) {
-                    scene.remove(pt.mesh);
-                    particles.splice(i, 1);
-                }
-            }
-
-            // --- NEXT WAVE ---
-            if (enemies.length === 0 && !boss && gameState === 'PLAYING') {
-                wave++;
-                spawnWave();
-            }
-
-            // --- GAME OVER CHECK ---
-            let p1Dead = !player1.alive;
-            let p2Dead = isCoop && !player2.alive;
-            if (p1Dead && (!isCoop || p2Dead)) {
-                gameState = 'GAMEOVER';
-                gameData.credits += sessionCredits;
-                if (score > gameData.highScore) gameData.highScore = score;
-                saveGame();
-
-                document.getElementById('hud-top').classList.add('hidden');
-                document.getElementById('gameover-screen').classList.remove('hidden');
-                document.getElementById('final-score').innerText = score;
-                document.getElementById('final-credits').innerText = sessionCredits;
-            }
-
-            // UI HUD Update
-            document.getElementById('score-display').innerText = String(score).padStart(6, '0');
-            document.getElementById('wave-display').innerText = wave;
-            document.getElementById('credits-display').innerText = gameData.credits;
-            
-            let p1HpPct = Math.max(0, (player1.shield / player1.maxShield) * 100);
-            document.getElementById('shield-bar-1').style.width = p1HpPct + '%';
-
-            if (isCoop) {
-                let p2HpPct = Math.max(0, (player2.shield / player2.maxShield) * 100);
-                document.getElementById('shield-bar-2').style.width = p2HpPct + '%';
-            }
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            update();
-            renderer.render(scene, camera);
-        }
-
-        // Lancement 3D initial
-        init3D();
-        animate();
-    </script>
-</body>
-</html>
+                    status.innerText =
