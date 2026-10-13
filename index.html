@@ -41,6 +41,7 @@
             background-color: #0a0915;
             color: #fff;
             overflow-x: hidden;
+            user-select: none;
         }
 
         .font-pixel {
@@ -131,7 +132,7 @@
                             <i class="fa-solid fa-table-tennis-paddle-ball text-3xl text-arcade-neonCyan"></i>
                         </div>
                         <h3 class="text-2xl font-pixel text-white mb-2">RETRO PONG</h3>
-                        <p class="text-gray-300 text-sm mb-4">The legendary arcade classic. Play 1v1 online with a generated room link or practice offline against the AI robot.</p>
+                        <p class="text-gray-300 text-sm mb-4">The legendary arcade classic. Play 1v1 online with a generated room code or practice offline against the AI robot.</p>
                     </div>
                     <div class="space-y-2">
                         <button onclick="app.launchPongLobby()" class="w-full py-3 bg-arcade-neonCyan text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-cyan-500/30">
@@ -148,7 +149,7 @@
                             <i class="fa-solid fa-worm text-3xl text-arcade-neonPink"></i>
                         </div>
                         <h3 class="text-2xl font-pixel text-white mb-2">NEON SNAKE</h3>
-                        <p class="text-gray-300 text-sm mb-4">Eat glowing energy pods, grow longer, and avoid hitting the neon borders or your own tail in this speedy retro grid.</p>
+                        <p class="text-gray-300 text-sm mb-4">Eat glowing energy pods, grow longer, and avoid hitting the glowing neon arena borders or your own tail.</p>
                     </div>
                     <div>
                         <button onclick="app.launchSnake()" class="w-full py-3 bg-arcade-neonPink text-black font-pixel text-sm rounded hover:bg-white transition font-bold shadow-lg shadow-pink-500/30">
@@ -208,14 +209,14 @@
                 <div id="pongMultiOptions" class="hidden space-y-6">
                     <div class="p-4 bg-black/40 rounded-xl border border-arcade-border space-y-3">
                         <h3 class="font-pixel text-arcade-neonPink text-sm">OPTION A: HOST A MATCH</h3>
-                        <p class="text-xs text-gray-400">Create a secure WebRTC room and share your code or link with a friend.</p>
+                        <p class="text-xs text-gray-400">Create a secure WebRTC room and share your room code with a friend.</p>
                         <button onclick="pongGame.hostGame()" class="w-full py-2.5 bg-arcade-neonPink text-black font-pixel text-xs font-bold rounded hover:bg-white transition">
                             HOST NEW ROOM
                         </button>
                         <div id="hostStatusArea" class="hidden space-y-2 pt-2">
                             <p class="text-xs text-arcade-neonCyan font-mono" id="peerIdDisplay">Initializing room...</p>
                             <div class="flex gap-2">
-                                <input type="text" id="shareLinkInput" readonly class="w-full bg-arcade-dark border border-arcade-border rounded px-2 py-1 text-xs text-gray-300 font-mono">
+                                <input type="text" id="shareLinkInput" readonly class="w-full bg-arcade-dark border border-arcade-border rounded px-2 py-1 text-xs text-gray-300 font-mono select-all">
                                 <button onclick="pongGame.copyShareLink()" class="px-3 bg-arcade-border hover:bg-arcade-neonCyan hover:text-black rounded text-xs font-pixel">COPY</button>
                             </div>
                             <p class="text-xs text-yellow-400 animate-pulse" id="waitingPeerMsg">Waiting for opponent to connect...</p>
@@ -226,7 +227,7 @@
                         <h3 class="font-pixel text-arcade-neonCyan text-sm">OPTION B: JOIN A MATCH</h3>
                         <p class="text-xs text-gray-400">Enter the room code provided by your friend to join their game.</p>
                         <div class="flex gap-2">
-                            <input type="text" id="joinCodeInput" placeholder="Enter Room Code..." class="w-full bg-arcade-dark border border-arcade-border rounded px-3 py-2 text-sm text-white font-mono focus:border-arcade-neonCyan outline-none">
+                            <input type="text" id="joinCodeInput" placeholder="Paste Room Code..." class="w-full bg-arcade-dark border border-arcade-border rounded px-3 py-2 text-sm text-white font-mono focus:border-arcade-neonCyan outline-none z-10 relative">
                             <button onclick="pongGame.joinGame()" class="px-4 bg-arcade-neonCyan text-black font-pixel text-xs font-bold rounded hover:bg-white transition">JOIN</button>
                         </div>
                         <p class="text-xs text-red-400 hidden" id="joinErrorMsg"></p>
@@ -311,6 +312,7 @@
         </div>
     </div>
 
+    <!-- Sound Engine -->
     <script>
         class SoundEngine {
             constructor() {
@@ -369,6 +371,7 @@
         const soundEngine = new SoundEngine();
     </script>
 
+    <!-- App Controller & State Management -->
     <script>
         class AppController {
             constructor() {
@@ -381,27 +384,38 @@
                 this.updateHighScoreDisplay();
             }
 
-            showMenu() {
-                if (this.activeGame && typeof this.activeGame.stop === 'function') {
-                    this.activeGame.stop();
+            stopActiveGame() {
+                if (this.activeGame) {
+                    if (typeof this.activeGame.stop === 'function') {
+                        this.activeGame.stop();
+                    }
+                    this.activeGame = null;
                 }
-                this.activeGame = null;
+            }
+
+            showMenu() {
+                this.stopActiveGame();
                 document.getElementById('hubView').classList.remove('hidden');
                 document.getElementById('pongLobbyView').classList.add('hidden');
                 document.getElementById('gameplayView').classList.add('hidden');
+                document.getElementById('gameOverlay').classList.add('hidden');
             }
 
             launchPongLobby() {
+                this.stopActiveGame();
                 document.getElementById('hubView').classList.add('hidden');
                 document.getElementById('pongLobbyView').classList.remove('hidden');
                 document.getElementById('gameplayView').classList.add('hidden');
+                document.getElementById('gameOverlay').classList.add('hidden');
                 pongGame.initLobby();
             }
 
             launchSnake() {
+                this.stopActiveGame();
                 document.getElementById('hubView').classList.add('hidden');
                 document.getElementById('pongLobbyView').classList.add('hidden');
                 document.getElementById('gameplayView').classList.remove('hidden');
+                document.getElementById('gameOverlay').classList.add('hidden');
                 document.getElementById('activeGameTitle').innerText = 'NEON SNAKE';
                 document.getElementById('gameScoreDisplay').classList.remove('hidden');
                 
@@ -410,9 +424,11 @@
             }
 
             launchBrickBreaker() {
+                this.stopActiveGame();
                 document.getElementById('hubView').classList.add('hidden');
                 document.getElementById('pongLobbyView').classList.add('hidden');
                 document.getElementById('gameplayView').classList.remove('hidden');
+                document.getElementById('gameOverlay').classList.add('hidden');
                 document.getElementById('activeGameTitle').innerText = 'BLOCK BREAKER';
                 document.getElementById('gameScoreDisplay').classList.remove('hidden');
 
@@ -488,6 +504,7 @@
         const app = new AppController();
     </script>
 
+    <!-- Retro Pong P2P Multiplayer & Solo Game Engine -->
     <script>
         class PongGame {
             constructor() {
@@ -498,8 +515,9 @@
                 this.running = false;
                 this.peer = null;
                 this.conn = null;
+                this.animId = null;
 
-                // Canvas logical dimensions
+                // Canvas logical dimensions (Fixed aspect ratio so never cut off)
                 this.width = 800;
                 this.height = 500;
                 this.canvas.width = this.width;
@@ -519,6 +537,7 @@
 
             initLobby() {
                 this.setMode('solo');
+                this.stop();
             }
 
             setMode(mode) {
@@ -549,6 +568,8 @@
 
                 this.player1.score = 0;
                 this.player2.score = 0;
+                this.player1.y = this.height / 2 - this.paddleHeight / 2;
+                this.player2.y = this.height / 2 - this.paddleHeight / 2;
                 this.resetBall();
                 this.running = true;
                 this.loop();
@@ -560,18 +581,17 @@
                 document.getElementById('peerIdDisplay').innerText = 'Connecting to P2P relay...';
                 
                 if (this.peer) {
-                    this.peer.destroy();
+                    try { this.peer.destroy(); } catch(e){}
                 }
 
-                // Create Peer with random suffix
-                const randomId = 'arcade-pong-' + Math.floor(Math.random() * 90000 + 10000);
+                // Create clean short alphanumeric peer id
+                const randomId = 'pong-' + Math.floor(Math.random() * 90000 + 10000);
                 this.peer = new Peer(randomId);
 
                 this.peer.on('open', (id) => {
                     document.getElementById('peerIdDisplay').innerText = `Room Code: ${id}`;
-                    const shareUrl = window.location.href.split('#')[0] + '#room=' + id;
                     document.getElementById('shareLinkInput').value = id;
-                    app.showToast('Room Created', 'Share the room code with your friend!', 'fa-link', 'text-arcade-neonPink');
+                    app.showToast('Room Created', 'Share your room code with your friend!', 'fa-link', 'text-arcade-neonPink');
                 });
 
                 this.peer.on('connection', (connection) => {
@@ -584,8 +604,8 @@
                 });
 
                 this.peer.on('error', (err) => {
-                    document.getElementById('peerIdDisplay').innerText = 'Error creating room. Try again.';
-                    console.error(err);
+                    console.error("PeerJS error:", err);
+                    document.getElementById('peerIdDisplay').innerText = 'Connection error. Retrying...';
                 });
             }
 
@@ -601,23 +621,27 @@
                 errBox.classList.add('hidden');
 
                 if (this.peer) {
-                    this.peer.destroy();
+                    try { this.peer.destroy(); } catch(e){}
                 }
+
+                app.showToast('Connecting...', `Attempting to join room ${code}`, 'fa-spinner', 'text-arcade-neonCyan');
 
                 this.peer = new Peer();
                 this.peer.on('open', () => {
-                    this.conn = this.peer.connect(code);
+                    this.conn = this.peer.connect(code, { reliable: true });
                     this.setupConnectionHandlers();
                 });
 
                 this.peer.on('error', (err) => {
+                    console.error("PeerJS guest error:", err);
                     errBox.innerText = 'Could not connect to room. Check code.';
                     errBox.classList.remove('hidden');
-                    console.error(err);
                 });
             }
 
             setupConnectionHandlers() {
+                if (!this.conn) return;
+
                 this.conn.on('open', () => {
                     if (this.role === 'guest') {
                         app.showToast('Connected!', 'Joined multiplayer room successfully!', 'fa-check', 'text-arcade-neonCyan');
@@ -627,12 +651,12 @@
 
                 this.conn.on('data', (data) => {
                     if (this.role === 'host') {
-                        // Host receives guest paddle position & input
+                        // Host receives guest paddle position
                         if (data.type === 'paddle') {
                             this.player2.y = data.y;
                         }
                     } else {
-                        // Guest receives entire authoritative state from host
+                        // Guest receives authoritative state from host
                         if (data.type === 'state') {
                             this.player1.y = data.p1y;
                             this.player2.y = data.p2y;
@@ -645,6 +669,13 @@
                         }
                     }
                 });
+
+                this.conn.on('close', () => {
+                    app.showToast('Disconnected', 'The opponent left the match.', 'fa-triangle-exclamation', 'text-red-400');
+                    if (this.running) {
+                        this.endGame('OPPONENT DISCONNECTED');
+                    }
+                });
             }
 
             startMultiplayerMatch() {
@@ -655,6 +686,8 @@
 
                 this.player1.score = 0;
                 this.player2.score = 0;
+                this.player1.y = this.height / 2 - this.paddleHeight / 2;
+                this.player2.y = this.height / 2 - this.paddleHeight / 2;
                 this.resetBall();
                 this.running = true;
                 this.loop();
@@ -663,8 +696,13 @@
             copyShareLink() {
                 const input = document.getElementById('shareLinkInput');
                 input.select();
-                document.execCommand('copy');
-                app.showToast('Copied!', 'Room code copied to clipboard.', 'fa-clipboard', 'text-arcade-neonCyan');
+                input.setSelectionRange(0, 99999);
+                try {
+                    document.execCommand('copy');
+                    app.showToast('Copied!', 'Room code copied to clipboard.', 'fa-clipboard', 'text-arcade-neonCyan');
+                } catch(e) {
+                    console.error(e);
+                }
             }
 
             bindControls() {
@@ -891,7 +929,7 @@
                 if (!this.running) return;
                 this.update();
                 this.draw();
-                requestAnimationFrame(() => this.loop());
+                this.animId = requestAnimationFrame(() => this.loop());
             }
 
             endGame(winnerTitle) {
@@ -903,8 +941,9 @@
 
             stop() {
                 this.running = false;
+                if (this.animId) cancelAnimationFrame(this.animId);
                 if (this.peer) {
-                    this.peer.destroy();
+                    try { this.peer.destroy(); } catch(e){}
                     this.peer = null;
                 }
             }
@@ -913,6 +952,7 @@
         const pongGame = new PongGame();
     </script>
 
+    <!-- Neon Snake Game Engine (with Visible Glowing Arena Borders) -->
     <script>
         class SnakeGame {
             constructor() {
@@ -924,7 +964,7 @@
                 this.canvas.height = this.height;
 
                 this.gridSize = 20;
-                this.tileCount = this.width / this.gridSize;
+                this.tileCount = this.width / this.gridSize; // 30 tiles
                 this.snake = [];
                 this.food = { x: 0, y: 0 };
                 this.dx = 1;
@@ -938,9 +978,9 @@
 
             start() {
                 this.snake = [
-                    { x: 10, y: 10 },
-                    { x: 9, y: 10 },
-                    { x: 8, y: 10 }
+                    { x: 15, y: 15 },
+                    { x: 14, y: 15 },
+                    { x: 13, y: 15 }
                 ];
                 this.dx = 1;
                 this.dy = 0;
@@ -954,11 +994,11 @@
             }
 
             spawnFood() {
+                // Spawn food inside the walls (index 1 to tileCount - 2)
                 this.food = {
-                    x: Math.floor(Math.random() * this.tileCount),
-                    y: Math.floor(Math.random() * this.tileCount)
+                    x: Math.floor(Math.random() * (this.tileCount - 4)) + 2,
+                    y: Math.floor(Math.random() * (this.tileCount - 4)) + 2
                 };
-                // Ensure food doesn't spawn on snake
                 for (let part of this.snake) {
                     if (part.x === this.food.x && part.y === this.food.y) {
                         this.spawnFood();
@@ -971,13 +1011,13 @@
                 window.addEventListener('keydown', (e) => {
                     if (app.activeGame !== this || !this.running) return;
 
-                    if ((e.key === 'ArrowUp' || e.key === 'w') && this.dy === 0) {
+                    if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') && this.dy === 0) {
                         this.dx = 0; this.dy = -1; e.preventDefault();
-                    } else if ((e.key === 'ArrowDown' || e.key === 's') && this.dy === 0) {
+                    } else if ((e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') && this.dy === 0) {
                         this.dx = 0; this.dy = 1; e.preventDefault();
-                    } else if ((e.key === 'ArrowLeft' || e.key === 'a') && this.dx === 0) {
+                    } else if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && this.dx === 0) {
                         this.dx = -1; this.dy = 0; e.preventDefault();
-                    } else if ((e.key === 'ArrowRight' || e.key === 'd') && this.dx === 0) {
+                    } else if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && this.dx === 0) {
                         this.dx = 1; this.dy = 0; e.preventDefault();
                     }
                 });
@@ -988,8 +1028,8 @@
 
                 const head = { x: this.snake[0].x + this.dx, y: this.snake[0].y + this.dy };
 
-                // Wall collision
-                if (head.x < 0 || head.x >= this.tileCount || head.y < 0 || head.y >= this.tileCount) {
+                // Wall collision with visible boundaries (Playable area 1 to tileCount-2)
+                if (head.x < 1 || head.x >= this.tileCount - 1 || head.y < 1 || head.y >= this.tileCount - 1) {
                     this.gameOver();
                     return;
                 }
@@ -1022,6 +1062,14 @@
                 this.ctx.fillStyle = '#0a0915';
                 this.ctx.fillRect(0, 0, this.width, this.height);
 
+                // Draw glowing neon arena boundaries
+                this.ctx.strokeStyle = '#00f0ff';
+                this.ctx.lineWidth = 4;
+                this.ctx.shadowColor = '#00f0ff';
+                this.ctx.shadowBlur = 12;
+                this.ctx.strokeRect(this.gridSize, this.gridSize, this.width - (this.gridSize * 2), this.height - (this.gridSize * 2));
+                this.ctx.shadowBlur = 0;
+
                 // Draw Food (Pink glow)
                 this.ctx.fillStyle = '#ff007f';
                 this.ctx.shadowColor = '#ff007f';
@@ -1042,7 +1090,7 @@
 
             gameOver() {
                 this.running = false;
-                clearInterval(this.gameInterval);
+                if (this.gameInterval) clearInterval(this.gameInterval);
                 soundEngine.playGameOver();
                 app.saveHighScore('snake', this.score);
 
@@ -1060,8 +1108,9 @@
         const snakeGame = new SnakeGame();
     </script>
 
+    <!-- Block Breaker Game Engine -->
     <script>
-        class BrickBreakerGame {
+        class BlockBreakerGame {
             constructor() {
                 this.canvas = document.getElementById('gameCanvas');
                 this.ctx = this.canvas.getContext('2d');
@@ -1071,7 +1120,7 @@
                 this.canvas.height = this.height;
 
                 this.paddle = { x: this.width / 2 - 50, y: this.height - 35, width: 100, height: 14, dx: 0 };
-                this.ball = { x: this.width / 2, y: this.height - 50, radius: 8, vx: 4, speed: 5 };
+                this.ball = { x: this.width / 2, y: this.height - 50, radius: 8, vx: 4, vy: -4, speed: 5 };
                 this.bricks = [];
                 this.brickRowCount = 5;
                 this.brickColumnCount = 8;
@@ -1084,6 +1133,7 @@
 
             start() {
                 this.paddle.x = this.width / 2 - 50;
+                this.paddle.dx = 0;
                 this.score = 0;
                 document.getElementById('currentScoreVal').innerText = this.score;
                 this.initBricks();
@@ -1094,10 +1144,10 @@
 
             initBricks() {
                 this.bricks = [];
-                const brickWidth = 65;
+                const brickWidth = 62;
                 const brickHeight = 20;
                 const padding = 10;
-                const offsetLeft = 35;
+                const offsetLeft = 32;
                 const offsetTop = 50;
 
                 for (let c = 0; c < this.brickColumnCount; c++) {
@@ -1122,17 +1172,16 @@
             bindControls() {
                 window.addEventListener('keydown', (e) => {
                     if (app.activeGame !== this || !this.running) return;
-                    if (e.key === 'ArrowLeft' || e.key === 'a') this.paddle.dx = -8;
-                    if (e.key === 'ArrowRight' || e.key === 'd') this.paddle.dx = 8;
+                    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.paddle.dx = -9;
+                    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.paddle.dx = 9;
                 });
 
                 window.addEventListener('keyup', (e) => {
                     if (app.activeGame !== this || !this.running) return;
-                    if ((e.key === 'ArrowLeft' || e.key === 'a') && this.paddle.dx < 0) this.paddle.dx = 0;
-                    if ((e.key === 'ArrowRight' || e.key === 'd') && this.paddle.dx > 0) this.paddle.dx = 0;
+                    if ((e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') && this.paddle.dx < 0) this.paddle.dx = 0;
+                    if ((e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') && this.paddle.dx > 0) this.paddle.dx = 0;
                 });
 
-                // Mouse / Touch paddle tracking
                 this.canvas.addEventListener('mousemove', (e) => {
                     if (app.activeGame !== this || !this.running) return;
                     const rect = this.canvas.getBoundingClientRect();
@@ -1140,6 +1189,14 @@
                     const mouseX = (e.clientX - rect.left) * scaleX;
                     this.paddle.x = mouseX - this.paddle.width / 2;
                 });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    if (app.activeGame !== this || !this.running) return;
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.width / rect.width;
+                    const touchX = (e.touches[0].clientX - rect.left) * scaleX;
+                    this.paddle.x = touchX - this.paddle.width / 2;
+                }, { passive: true });
             }
 
             update() {
@@ -1165,6 +1222,7 @@
 
                 // Paddle collision
                 if (this.ball.y + this.ball.radius >= this.paddle.y &&
+                    this.ball.y - this.ball.radius <= this.paddle.y + this.paddle.height &&
                     this.ball.x >= this.paddle.x && this.ball.x <= this.paddle.x + this.paddle.width) {
                     this.ball.vy *= -1;
                     soundEngine.playPaddleHit();
@@ -1173,20 +1231,20 @@
                 }
 
                 // Bottom floor collision (Game over)
-                if (this.ball.y + this.ball.radius >= this.height) {
+                if (this.ball.y - this.ball.radius >= this.height) {
                     this.gameOver();
                     return;
                 }
 
                 // Brick collisions
                 let remainingBricks = 0;
+                const brickWidth = 62;
+                const brickHeight = 20;
                 for (let c = 0; c < this.brickColumnCount; c++) {
                     for (let r = 0; r < this.brickRowCount; r++) {
                         const b = this.bricks[c][r];
                         if (b.status === 1) {
                             remainingBricks++;
-                            const brickWidth = 65;
-                            const brickHeight = 20;
                             if (this.ball.x > b.x && this.ball.x < b.x + brickWidth &&
                                 this.ball.y > b.y && this.ball.y < b.y + brickHeight) {
                                 this.ball.vy *= -1;
@@ -1214,7 +1272,7 @@
                 this.ctx.fillRect(0, 0, this.width, this.height);
 
                 // Draw bricks
-                const brickWidth = 65;
+                const brickWidth = 62;
                 const brickHeight = 20;
                 for (let c = 0; c < this.brickColumnCount; c++) {
                     for (let r = 0; r < this.brickRowCount; r++) {
@@ -1269,22 +1327,6 @@
         }
 
         const breakerGame = new BlockBreakerGame();
-    </script>
-
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            // Check if URL has room hash for auto-joining Pong
-            const hash = window.location.hash;
-            if (hash.includes('room=')) {
-                const roomId = hash.split('room=')[1];
-                app.launchPongLobby();
-                document.getElementById('pongModeMultiBtn').click();
-                document.getElementById('joinCodeInput').value = roomId;
-                setTimeout(() => {
-                    pongGame.joinGame();
-                }, 500);
-            }
-        });
     </script>
 </body>
 </html>
